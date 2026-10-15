@@ -422,6 +422,7 @@ button.com-denunciar{color:var(--muted)}
         <button type="button" id="btn-seguir" hidden>Seguir</button>
         <button type="button" id="btn-denunciar-perfil" class="text-btn" hidden>Denunciar perfil</button>
         <button type="button" id="btn-excluir-perfil" class="perigo" hidden>Excluir perfil (moderação)</button>
+        <button type="button" id="btn-banir-perfil" class="perigo" hidden>Banir usuário (moderação)</button>
       </div>
       <div id="perfil-acoes" hidden>
         <button type="button" id="btn-editar-perfil">Editar perfil</button>
@@ -1636,6 +1637,7 @@ function renderPerfil(){
   $("btn-denunciar-perfil").hidden = !(currentUser && !meu);
   $("perfil-mod").hidden = !uidEhMod(uid);
   $("btn-excluir-perfil").hidden = !(ehModerador() && !meu && !uidEhMod(uid));
+  $("btn-banir-perfil").hidden = !(ehModerador() && !meu && !uidEhMod(uid));
   $("perfil-acoes").hidden = !meu || editandoPerfil;
   $("form-perfil").hidden = !(meu && editandoPerfil);
   $("lista-perfil").innerHTML = projs.length
@@ -2178,6 +2180,8 @@ $("form-denuncia").addEventListener("submit", async function(e){
   if(ctx.projetoId) dados.projetoId = ctx.projetoId;
   $("den-enviar").disabled = true;
   try{
+    await currentUser.reload();
+    await currentUser.getIdToken(true);
     // id = tipo_alvo_denunciante: cada pessoa só pode denunciar o mesmo conteúdo uma vez
     await setDoc(doc(db, "denuncias", ctx.tipo + "_" + ctx.alvoId + "_" + currentUser.uid), dados);
     msgEl.textContent = "";
@@ -2547,16 +2551,17 @@ function ouvirModeradores(){
 
 // Moderação: apaga perfil + reserva do username + projetos + comentários da pessoa
 // (a conta de login dela continua existindo; se entrar de novo, terá que escolher um novo username)
-async function excluirPerfilModerador(uid){
+async function excluirPerfilModerador(uid, banir){
   if(!ehModerador() || uid === currentUser.uid || uidEhMod(uid)) return false;
   const pf = perfisPorUid[uid];
   const nome = pf && pf.username ? "@" + pf.username : "este usuário";
   const projs = projetosNuvem.filter(function(p){ return p.uid === uid; });
   const coms = comentarios.filter(function(c){ return c.uid === uid; });
-  if(!confirm("Excluir o perfil de " + nome + "?\n\nSerão apagados: o perfil, o username, " + projs.length + " projeto(s) e " + coms.length + " comentário(s).\n\nEssa ação não pode ser desfeita.")) return false;
+  if(!confirm((banir ? "BANIR e excluir o perfil de " : "Excluir o perfil de ") + nome + "?\n\nSerão apagados: o perfil, o username, " + projs.length + " projeto(s) e " + coms.length + " comentário(s).\n\nEssa ação não pode ser desfeita.")) return false;
   const btn = $("btn-excluir-perfil");
   btn.disabled = true;
   try{
+    if(banir) await setDoc(doc(db, "banidos", uid), { por: currentUser.uid, username: nome, em: serverTimestamp() });
     const refs = [];
     projs.forEach(function(p){ refs.push(doc(db, "projetos", p.id)); });
     coms.forEach(function(c){ refs.push(doc(db, "comentarios", c.id)); });
@@ -2575,7 +2580,7 @@ async function excluirPerfilModerador(uid){
       perfilAbertoUid = null;
       if(!$("view-perfil").hidden) voltarProjetos();
     }
-    alert("Perfil excluído.");
+    alert(banir ? "Usuário banido e perfil excluído." : "Perfil excluído.");
     return true;
   }catch(err){
     console.error(err);
@@ -2586,6 +2591,20 @@ async function excluirPerfilModerador(uid){
   }
 }
 $("btn-excluir-perfil").addEventListener("click", function(){ if(perfilAbertoUid) excluirPerfilModerador(perfilAbertoUid); });
+$("btn-banir-perfil").addEventListener("click", function(){ if(perfilAbertoUid) excluirPerfilModerador(perfilAbertoUid, true); });
+
+// Banimento: se a conta logada estiver em "banidos", avisa e desconecta
+let unsubBanimento = null, banimentoUid = null;
+function sincronizarBanimento(){
+  const uid = currentUser ? currentUser.uid : null;
+  if(uid === banimentoUid) return;
+  if(unsubBanimento){ unsubBanimento(); unsubBanimento = null; }
+  banimentoUid = uid;
+  if(!uid) return;
+  unsubBanimento = onSnapshot(doc(db, "banidos", uid), function(snap){
+    if(snap.exists()){ alert("Esta conta foi banida pela moderação."); signOut(auth); }
+  }, function(err){ console.error("Erro ao checar banimento: ", err); });
+}
 
 // Comentários
 $("com-texto").addEventListener("input", function(){ $("com-contador").textContent = this.value.length + "/500"; });
@@ -2898,7 +2917,7 @@ $("form-projeto").addEventListener("submit", async function(e){
 });
 
 // Atualiza o botão "+ Novo projeto" e o status quando o login muda
-onAuthStateChanged(auth, function(){ atualizarMenu(); ouvirSalvos(); atualizarTelas(); verificarPerfil(); });
+onAuthStateChanged(auth, function(){ sincronizarBanimento(); atualizarMenu(); ouvirSalvos(); atualizarTelas(); verificarPerfil(); });
 
 renderModelos();
 renderProjetos();
