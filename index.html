@@ -27,7 +27,7 @@
 *{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--sans)}
-main{max-width:920px;margin:0 auto;padding:0 20px 56px}
+main{max-width:1240px;margin:0 auto;padding:0 24px 56px}
 [hidden]{display:none!important}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 h1,h2,h3{font-family:var(--serif);font-weight:600;letter-spacing:-.01em}
@@ -82,6 +82,11 @@ button.text-btn:hover{color:var(--text)}
 .filtros{display:flex;gap:8px;flex-wrap:wrap;flex:1;justify-content:flex-end}
 .filtros input{max-width:320px}
 .filtros select{max-width:240px}
+#view-projetos .filtros{flex-wrap:nowrap;align-items:stretch;gap:10px}
+#view-projetos .filtros input,#view-projetos .filtros select{height:46px;box-sizing:border-box;max-width:none;margin:0}
+#busca-projetos{flex:1 1 260px;min-width:0}
+#view-projetos .filtros select{flex:0 0 210px;width:210px}
+@media(max-width:760px){#view-projetos .filtros{flex-wrap:wrap}#busca-projetos{flex:1 1 100%}#view-projetos .filtros select{flex:1 1 140px;width:auto}}
 .muted{color:var(--muted);font-size:14px;font-weight:400}
 
 /* Listas */
@@ -101,12 +106,17 @@ button.text-btn:hover{color:var(--text)}
 .status{margin:8px 0 0;text-align:right;font-size:13px;color:var(--muted)}
 
 /* Projetos */
-.projeto-card{padding:22px;display:flex;flex-direction:column;gap:12px}
+.projeto-card{padding:20px 22px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px 24px;align-items:stretch}
+.card-esq{display:flex;flex-direction:column;gap:10px;min-width:0}
+.projeto-card .actions{grid-column:1 / -1}
+@media(max-width:760px){.projeto-card{grid-template-columns:minmax(0,1fr)}}
 .projeto-card h3{margin:0;font-size:22px;color:var(--text)}
 .projeto-card p{margin:0;font-size:15px}
 .titulo-link{background:none;border:none;padding:0;min-height:auto;font:inherit;color:inherit;text-align:left;display:inline;cursor:pointer;font-weight:inherit}
 .titulo-link:hover{color:var(--accent);text-decoration:underline;text-underline-offset:4px}
-.card-fotos{display:flex;gap:10px;flex-wrap:wrap}
+.card-fotos{display:flex;gap:10px;flex:1 1 auto;min-height:220px}
+.card-fotos .foto-abrir{position:relative;flex:1 1 0;min-width:0}
+.card-fotos .foto-abrir img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:contain}
 .foto-abrir{padding:0;min-height:auto;background:#fff;border:1px solid var(--line);border-radius:4px;overflow:hidden;max-width:100%;display:block}
 .foto-abrir:hover{border-color:var(--accent)}
 .foto-abrir img{display:block;height:200px;width:auto;max-width:100%;object-fit:contain}
@@ -1491,11 +1501,11 @@ function fotosCardHtml(p){
 function cardProjetoHtml(p){
   const av = avaliarProjeto(p);
   return '<section class="card projeto-card">' +
-    autorHtml(p) +
+    '<div class="card-esq">' + autorHtml(p) +
     '<h3><button type="button" class="titulo-link" data-abrir="' + esc(p.id) + '">' + esc(p.titulo) + '</button></h3>' +
     (p.exemplo ? '<div><span class="tag">Exemplo do Ohmia</span></div>' : '') +
     statusHtml(av) +
-    '<p>' + esc(p.descricao) + '</p>' + fotosCardHtml(p) +
+    '<p>' + esc(p.descricao) + '</p>' + fotosCardHtml(p) + '</div>' +
     '<div class="projeto-pecas"><strong>Peças necessárias:</strong>' + pecasHtml(p, av) + '</div>' +
     '<div class="actions">' + curtirHtml(p) + salvarHtml(p) +
       '<span class="contador-com" title="Comentários">' + (comentariosContagem[p.id] || 0) + ' comentário(s)</span></div>' +
