@@ -2982,7 +2982,7 @@ function iaLerJson(texto){
 
 function iaMensagemErro(err){
   const t = String((err && (err.code + " " + err.message)) || err || "");
-  if(/429|quota|RESOURCE_EXHAUSTED|rate/i.test(t)) return "A cota gratuita da IA acabou por agora. Tente de novo mais tarde ou preencha as peças manualmente.";
+if(/\b429\b|quota|RESOURCE_EXHAUSTED|rate.?limit/i.test(t)) return "A cota gratuita da IA acabou por agora. Tente de novo mais tarde ou preencha as peças manualmente.";
   if(/403|PERMISSION_DENIED|api-not-enabled|has not been used|disabled/i.test(t)) return "A IA ainda não foi ativada no Firebase (Build > AI Logic). Veja as instruções do administrador.";
   if(/fetch|network|Failed to fetch/i.test(t)) return "Não consegui falar com a IA. Verifique a internet e tente de novo.";
   if(/JSON|Unexpected token/i.test(t)) return "A IA respondeu em um formato inesperado. Tente de novo ou preencha as peças manualmente.";
