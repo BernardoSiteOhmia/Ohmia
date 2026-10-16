@@ -5,6 +5,7 @@ Site de eletrônica para iniciantes, estudantes e hobbystas: cadastre os compone
 ## Recursos
 - Inventário de componentes com quantidades
 - Projetos com fotos, curtidas, comentários e salvos
+- Login com e-mail e senha ou com o Google
 - Perfis com username, seguir pessoas e foto de perfil
 - Denúncias com painel para o moderador
 
