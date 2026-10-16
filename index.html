@@ -73,6 +73,8 @@ button.text-btn:hover{color:var(--text)}
 .auth-container{max-width:420px;margin:40px auto}
 .auth-container button[type="submit"]{width:100%;margin-top:8px;padding:12px}
 .auth-link{text-align:center;font-size:14px;color:var(--muted);margin-top:16px}
+.ia-caixa{margin-top:12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.ia-aviso{font-size:13px;margin:0}
 .google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:600}
 .google-btn:hover{background:#f1f3f4}
 .google-btn:disabled{opacity:.6;cursor:default}
@@ -536,6 +538,11 @@ button.com-denunciar{color:var(--muted)}
           <p id="np-fotos-contador" class="muted"></p>
           <input type="file" id="np-foto" accept="image/*" multiple>
           <div id="np-fotos-lista" class="fotos-grid"></div>
+          <div class="ia-caixa">
+            <button type="button" id="np-ia" disabled>✨ Analisar foto com IA e sugerir as peças</button>
+            <p class="muted ia-aviso">A IA lê as fotos e preenche a lista de peças para você revisar. Ela pode errar, então confira tudo antes de publicar. As fotos são enviadas ao Google (Gemini) para a análise.</p>
+            <p id="np-ia-msg" class="msg" role="status"></p>
+          </div>
         </div>
         <label>Nome do projeto
           <input id="np-nome" required placeholder="ex.: Pisca-pisca com NE555">
@@ -1839,6 +1846,7 @@ function atualizarFotos(){
     ? "Nenhuma foto ainda. Você pode enviar até " + LIMITE_FOTOS + "."
     : n + " de " + LIMITE_FOTOS + " fotos.";
   $("np-foto").disabled = n >= LIMITE_FOTOS;
+  $("np-ia").disabled = n === 0;
   $("np-fotos-lista").innerHTML = fotosForm.map(function(src, i){
     return '<figure class="foto-prev"><img src="' + esc(src) + '" alt="Diagrama ' + (i + 1) + '"><button type="button" data-remover-foto="' + i + '">Remover</button></figure>';
   }).join("");
@@ -1889,6 +1897,7 @@ function abrirFormProjeto(id){
   
   $("np-msg").textContent = "";
   $("np-msg").className = "msg";
+  $("np-ia-msg").textContent = "";
   setNavActive("nav-projetos");
   showView("view-novo-projeto");
   window.scrollTo(0, 0);
@@ -2886,6 +2895,147 @@ $("np-pecas-lista").addEventListener("change", function(e){
   pecaAbertaIdx = pi; // Mantém a peça aberta para preencher os campos da nova categoria
   desenharFormPecas(st);
 });
+
+
+// --- IA: analisa as fotos e sugere as peças (Firebase AI Logic + Gemini, plano gratuito) ---
+// Se um modelo sair do ar ou deixar de ser gratuito, troque/ordene os nomes nesta lista.
+const MODELOS_IA = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+const IA_VERSAO_SDK = "11.10.0";
+const IA_LIMITE_DIA = 10;      // análises por dia neste navegador (protege a cota gratuita)
+const IA_ESPERA_MS = 15000;    // intervalo mínimo entre análises
+let iaModulo = null, iaUltimoUso = 0;
+
+function iaHoje(){ return new Date().toISOString().slice(0, 10); }
+function iaUsosHoje(){
+  try { const d = JSON.parse(localStorage.getItem("ohmia_ia") || "{}"); return d.dia === iaHoje() ? (d.n || 0) : 0; }
+  catch (e) { return 0; }
+}
+function iaRegistrarUso(){
+  try { localStorage.setItem("ohmia_ia", JSON.stringify({ dia: iaHoje(), n: iaUsosHoje() + 1 })); } catch (e) {}
+}
+
+function iaPrompt(){
+  const linhas = Object.keys(CAT).map(function(nome){
+    const campos = CAT[nome].c.map(function(f){
+      if(f.t === "valor") return f.k + " (número + unidade: " + f.u.join(" | ") + ")";
+      if(f.t === "opcoes") return f.k + " (uma de: " + f.o.filter(Boolean).map(function(x){ return '"' + x + '"'; }).join(", ") + ")";
+      return f.k + " (texto)";
+    }).join("; ");
+    return '- "' + nome + '": ' + campos;
+  }).join("\n");
+  return "Você é um assistente de eletrônica. Analise a(s) imagem(ns) de um circuito (esquema, layout de placa ou foto) e liste as peças necessárias para montá-lo.\n\n" +
+    "Regras:\n" +
+    "- Responda SOMENTE com JSON válido, sem markdown e sem texto antes ou depois.\n" +
+    '- Formato: {"pecas":[{"categoria":"<nome exato da categoria>","qtd":<inteiro>,"campos":{"<chave>":"<valor>"}}]}\n' +
+    "- Use apenas as categorias e as chaves de campos listadas abaixo.\n" +
+    '- Campos "número + unidade": escreva número, espaço e unidade exatamente como listada (ex.: "10 kΩ", "100 nF", "50 V").\n' +
+    '- Campos de opção: copie exatamente uma das opções listadas, ou "" se não tiver certeza.\n' +
+    '- Se um valor não estiver legível ou você não tiver certeza, deixe o campo como "". Nunca invente valores.\n' +
+    "- Junte peças idênticas somando a quantidade (use legendas como R1, R2, C1 para contar).\n" +
+    '- Para circuitos integrados, transistores e diodos, coloque o modelo no campo "modelo" quando existir.\n' +
+    '- Se algo não se encaixar em nenhuma categoria, use "Outros".\n' +
+    '- Se a imagem não for de um circuito eletrônico, responda {"pecas":[]}.\n\n' +
+    "Categorias e campos:\n" + linhas;
+}
+
+function iaParteDeImagem(dataUrl){
+  const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+  return m ? { inlineData: { mimeType: m[1], data: m[2] } } : null;
+}
+
+// Confere cada peça sugerida contra o catálogo; o que não bate vira campo vazio
+function iaLimparPeca(p){
+  if(!p || typeof p.categoria !== "string" || !CAT[p.categoria]) return null;
+  const qtd = Math.max(1, Math.min(999, parseInt(p.qtd, 10) || 1));
+  const campos = (p.campos && typeof p.campos === "object") ? p.campos : {};
+  const vals = {};
+  CAT[p.categoria].c.forEach(function(f){
+    let v = campos[f.k] == null ? "" : String(campos[f.k]).trim();
+    if(f.t === "valor"){
+      const m = /^([0-9]+(?:[.,][0-9]+)?)\s*(.*)$/.exec(v);
+      let ok = "";
+      if(m){
+        const num = m[1].replace(",", ".");
+        let un = normUnit(m[2]).replace(/^u/, "\u00B5");
+        if(!un && f.u.length === 1) un = normUnit(f.u[0]);
+        const achada = f.u.find(function(x){ return normUnit(x) === un; });
+        if(achada) ok = num + " " + achada;
+      }
+      v = ok;
+    } else if(f.t === "opcoes"){
+      const achada = f.o.find(function(x){ return x && x.toLowerCase() === v.toLowerCase(); });
+      v = achada || "";
+    } else {
+      v = v.slice(0, 60);
+    }
+    vals[f.k] = v;
+  });
+  return { qtd: String(qtd), obs: "", categoria: p.categoria, vals: vals };
+}
+
+function iaLerJson(texto){
+  let t = String(texto || "").trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if(a >= 0 && b > a) t = t.slice(a, b + 1);
+  return JSON.parse(t);
+}
+
+function iaMensagemErro(err){
+  const t = String((err && (err.code + " " + err.message)) || err || "");
+  if(/429|quota|RESOURCE_EXHAUSTED|rate/i.test(t)) return "A cota gratuita da IA acabou por agora. Tente de novo mais tarde ou preencha as peças manualmente.";
+  if(/403|PERMISSION_DENIED|api-not-enabled|has not been used|disabled/i.test(t)) return "A IA ainda não foi ativada no Firebase (Build > AI Logic). Veja as instruções do administrador.";
+  if(/fetch|network|Failed to fetch/i.test(t)) return "Não consegui falar com a IA. Verifique a internet e tente de novo.";
+  if(/JSON|Unexpected token/i.test(t)) return "A IA respondeu em um formato inesperado. Tente de novo ou preencha as peças manualmente.";
+  return "Não consegui analisar a foto agora. Preencha as peças manualmente ou tente de novo mais tarde.";
+}
+
+async function iaAnalisarFotos(){
+  const msg = $("np-ia-msg"), btn = $("np-ia");
+  function mostrar(t, erro){ msg.textContent = t; msg.className = erro ? "msg erro" : "msg"; }
+  if(!fotosForm.length){ mostrar("Envie pelo menos uma foto do circuito.", true); return; }
+  if(Date.now() - iaUltimoUso < IA_ESPERA_MS){ mostrar("Aguarde alguns segundos antes de analisar de novo.", true); return; }
+  if(iaUsosHoje() >= IA_LIMITE_DIA){ mostrar("Você já usou a IA " + IA_LIMITE_DIA + " vezes hoje. Preencha as peças manualmente ou volte amanhã.", true); return; }
+  iaUltimoUso = Date.now();
+  btn.disabled = true;
+  mostrar("Analisando as fotos... pode levar alguns segundos.", false);
+  try {
+    if(!iaModulo){
+      const base = "https://www.gstatic.com/firebasejs/" + IA_VERSAO_SDK + "/";
+      const mods = await Promise.all([import(base + "firebase-app.js"), import(base + "firebase-ai.js")]);
+      const appIA = mods[0].initializeApp(firebaseConfig, "ia");
+      iaModulo = { sdk: mods[1], ai: mods[1].getAI(appIA, { backend: new mods[1].GoogleAIBackend() }) };
+    }
+    const entrada = [iaPrompt()];
+    fotosForm.forEach(function(f){ const p = iaParteDeImagem(f); if(p) entrada.push(p); });
+    let texto = null, ultimoErro = null;
+    for(const nome of MODELOS_IA){
+      try {
+        const modelo = iaModulo.sdk.getGenerativeModel(iaModulo.ai, { model: nome, generationConfig: { responseMimeType: "application/json", temperature: 0.1 } });
+        const res = await modelo.generateContent(entrada);
+        texto = res.response.text();
+        break;
+      } catch (e) { ultimoErro = e; console.warn("IA: modelo " + nome + " falhou", e); }
+    }
+    if(texto === null) throw ultimoErro;
+    iaRegistrarUso();
+    const dados = iaLerJson(texto);
+    const novas = (Array.isArray(dados.pecas) ? dados.pecas : []).map(iaLimparPeca).filter(Boolean);
+    if(!novas.length){ mostrar("A IA não encontrou peças nessas fotos. Preencha a lista manualmente.", true); return; }
+    let atuais = capturarFormPecas();
+    const vazia = function(p){ return !p.obs && p.qtd === "1" && p.categoria === "Resistores" && !Object.keys(p.vals).some(function(k){ return p.vals[k]; }); };
+    if(atuais.length === 1 && vazia(atuais[0])) atuais = [];
+    pecaAbertaIdx = -1;
+    desenharFormPecas(atuais.concat(novas));
+    mostrar(novas.length + " peça(s) sugerida(s) pela IA. Confira categoria, valor e quantidade antes de publicar.", false);
+    $("np-pecas-lista").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    console.error(e);
+    mostrar(iaMensagemErro(e), true);
+  } finally {
+    btn.disabled = fotosForm.length === 0;
+  }
+}
+$("np-ia").addEventListener("click", iaAnalisarFotos);
 
 $("np-cancelar").addEventListener("click", function(){
   const id = editandoProjetoId;
