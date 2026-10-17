@@ -231,6 +231,23 @@ button.com-denunciar{color:var(--muted)}
   .filtros input,.filtros select{max-width:none}
   .card{padding:16px}
 }
+
+/* Catálogo de peças: sugestões de modelo */
+.cat-sug{position:absolute;z-index:60;background:var(--card);border:1px solid var(--line);border-radius:4px;box-shadow:0 8px 22px rgba(0,0,0,.2);max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.cat-item{padding:8px 12px;min-height:44px;display:flex;flex-direction:column;justify-content:center;gap:1px;cursor:pointer;border-bottom:1px solid var(--line)}
+.cat-item:last-child{border-bottom:none}
+.cat-item b{font-weight:600;word-break:break-word}
+.cat-item small{color:var(--muted);font-size:12px}
+.cat-item.ativo,.cat-item:hover{background:var(--tag);color:var(--tag-ink)}
+.cat-item.ativo small,.cat-item:hover small{color:var(--tag-ink)}
+.cat-aviso{padding:9px 12px;font-size:13px;color:var(--muted)}
+.cat-nota{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.cat-nota a{color:var(--accent)}
+/* Decodificador de capacitores */
+.cod-cap{grid-column:1/-1}
+.cod-cap-res{font-size:13px;font-weight:500;min-height:1.2em;color:var(--muted)}
+.cod-cap-res.ok-cod{color:var(--ok)}
+.cod-cap-res.erro{color:var(--warn)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -1119,7 +1136,7 @@ function setStatus(t){ $("status").textContent=t; }
 function montarCampos(cat,vals){
   vals = vals || {};
   const c = CAT[cat] ? CAT[cat].c : [];
-  $("campos").innerHTML = c.map(function(f){
+  $("campos").innerHTML = codCapHtml(cat) + c.map(function(f){
     const v = vals[f.k] || "";
     const optLabel = f.opcional ? ' <span style="font-weight:normal;opacity:0.75">(opcional)</span>' : '';
     if(f.t==="valor"){
@@ -1763,7 +1780,7 @@ function categoriasOpts(sel){
 function camposHtml(cat, vals){
   vals = vals || {};
   const lista = CAT[cat] ? CAT[cat].c : [];
-  return lista.map(function(f){
+  return codCapHtml(cat) + lista.map(function(f){
     const v = vals[f.k] || "";
     if(f.t === "valor"){
       const partes = v ? v.split(" ") : [];
@@ -2575,6 +2592,325 @@ document.querySelectorAll(".chk-comparar").forEach(function(c){
   });
 });
 
+
+// ===== Catálogo de peças (catalogo.json) + busca por trecho =====
+const CATALOGO_URL = "catalogo.json";
+const CATALOGO_MAX = 40;        // máximo de sugestões mostradas
+const CATALOGO_ATRASO = 120;    // espera (ms) depois da última tecla antes de buscar
+let catalogoPorCat = {};        // categoria -> [{ m, f, p, t, d, n }]  (n = texto normalizado, calculado uma vez)
+let catalogoEstado = "carregando"; // "carregando" | "ok" | "erro"
+let catalogoAvisoDado = false;
+
+// "BC 547", "bc-547" e "BC547" viram todos "bc547"; acentos e símbolos somem
+function nBusca(s){
+  return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function aplicarCatalogo(dados){
+  const por = {};
+  (dados.componentes || []).forEach(function(x){
+    if(!x || typeof x.m !== "string" || !CAT[x.c]) return;
+    const m = x.m.trim(), n = nBusca(m);
+    if(!n) return;
+    (por[x.c] = por[x.c] || []).push({
+      m: m,
+      f: typeof x.f === "string" ? x.f : "",
+      p: typeof x.p === "string" ? x.p : "",
+      t: typeof x.t === "string" ? x.t : "",
+      d: typeof x.d === "string" ? x.d.trim() : "",
+      n: n
+    });
+  });
+  catalogoPorCat = por;
+  catalogoEstado = "ok";
+}
+
+// Cache no aparelho (IndexedDB; se falhar, o site segue sem cache)
+function idbAbrir(){
+  return new Promise(function(resolve, reject){
+    try{
+      const r = indexedDB.open("ohmia-cache", 1);
+      r.onupgradeneeded = function(){ r.result.createObjectStore("kv"); };
+      r.onsuccess = function(){ resolve(r.result); };
+      r.onerror = function(){ reject(r.error); };
+    }catch(e){ reject(e); }
+  });
+}
+function idbLer(chave){
+  return idbAbrir().then(function(bd){
+    return new Promise(function(resolve, reject){
+      const q = bd.transaction("kv", "readonly").objectStore("kv").get(chave);
+      q.onsuccess = function(){ resolve(q.result); };
+      q.onerror = function(){ reject(q.error); };
+    });
+  });
+}
+function idbGravar(chave, valor){
+  return idbAbrir().then(function(bd){
+    return new Promise(function(resolve, reject){
+      const t = bd.transaction("kv", "readwrite");
+      t.objectStore("kv").put(valor, chave);
+      t.oncomplete = function(){ resolve(); };
+      t.onerror = function(){ reject(t.error); };
+    });
+  });
+}
+
+// Usa o cache na hora (se houver) e confere o arquivo no servidor; só troca se o número da "versao" mudou
+async function carregarCatalogo(){
+  let cache = null;
+  try{ cache = await idbLer("catalogo"); }catch(e){ cache = null; }
+  const cacheOk = !!(cache && cache.versao !== undefined && Array.isArray(cache.componentes));
+  if(cacheOk) aplicarCatalogo(cache);
+  try{
+    const r = await fetch(CATALOGO_URL, { cache: "no-cache" });
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const dados = await r.json();
+    if(!dados || !Array.isArray(dados.componentes)) throw new Error("formato inválido");
+    if(!cacheOk || cache.versao !== dados.versao){
+      aplicarCatalogo(dados);
+      try{ await idbGravar("catalogo", { versao: dados.versao, componentes: dados.componentes }); }catch(e){}
+    }
+  }catch(err){
+    console.warn("Catálogo de peças indisponível:", err);
+    if(catalogoEstado !== "ok") catalogoEstado = "erro";
+  }
+}
+
+function porTamanho(a, b){ return a.n.length - b.n.length; }
+
+// Acha o trecho em qualquer posição; quem começa com o termo vem primeiro
+function buscarCatalogo(cat, termo){
+  const q = nBusca(termo);
+  const lista = catalogoPorCat[cat];
+  if(!q || !lista) return [];
+  const ini = [], cont = [];
+  for(let i = 0; i < lista.length; i++){
+    const it = lista[i];
+    const pos = it.n.indexOf(q);
+    if(pos < 0) continue;
+    if(pos === 0){ ini.push(it); if(ini.length >= CATALOGO_MAX) break; }
+    else if(cont.length < CATALOGO_MAX) cont.push(it);
+  }
+  ini.sort(porTamanho); cont.sort(porTamanho);
+  return ini.concat(cont).slice(0, CATALOGO_MAX);
+}
+
+// --- Caixa de sugestões (uma só, reaproveitada) ---
+const sug = { el: null, input: null, cont: null, cat: "", itens: [], ativo: -1, timer: null };
+
+function campoModelo(t){
+  return (t && t.matches && t.matches('input[data-k="modelo"][data-p="v"]') && t.closest("#campos, .peca-campos")) ? t : null;
+}
+function contDoCampo(inp){ return inp.closest("#campos, .peca-campos"); }
+function catDoCont(cont){
+  if(cont.id === "campos") return $("categoria").value;
+  const sel = cont.closest(".peca-bloco").querySelector(".peca-cat");
+  return sel ? sel.value : "";
+}
+
+function sugElemento(){
+  if(!sug.el){
+    const d = document.createElement("div");
+    d.id = "cat-sug"; d.className = "cat-sug"; d.hidden = true;
+    d.setAttribute("role", "listbox");
+    d.addEventListener("mousedown", function(e){ e.preventDefault(); }); // não tira o foco do campo
+    d.addEventListener("click", function(e){
+      const it = e.target.closest(".cat-item");
+      if(it) sugEscolher(parseInt(it.dataset.i, 10));
+    });
+    document.body.appendChild(d);
+    sug.el = d;
+  }
+  return sug.el;
+}
+
+function sugFechar(){
+  clearTimeout(sug.timer);
+  if(sug.el) sug.el.hidden = true;
+  sug.ativo = -1;
+  if(sug.input){
+    sug.input.setAttribute("aria-expanded", "false");
+    sug.input.removeAttribute("aria-activedescendant");
+  }
+}
+
+function sugPosicionar(){
+  const el = sug.el, inp = sug.input;
+  if(!el || !inp || el.hidden) return;
+  if(!document.body.contains(inp)){ sugFechar(); return; }
+  const r = inp.getBoundingClientRect();
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const abaixo = vh - r.bottom, acima = r.top;
+  el.style.width = r.width + "px";
+  el.style.left = (r.left + window.pageXOffset) + "px";
+  const desejada = Math.min(260, el.scrollHeight);
+  if(abaixo < Math.min(desejada, 200) && acima > abaixo){
+    el.style.maxHeight = Math.max(120, Math.min(260, acima - 8)) + "px";
+    el.style.top = (r.top + window.pageYOffset - el.offsetHeight - 2) + "px";
+  } else {
+    el.style.maxHeight = Math.max(120, Math.min(260, abaixo - 8)) + "px";
+    el.style.top = (r.bottom + window.pageYOffset + 2) + "px";
+  }
+}
+
+function sugAbrir(){
+  sug.el.hidden = false;
+  if(sug.input) sug.input.setAttribute("aria-expanded", "true");
+  sugPosicionar();
+}
+
+function sugBuscar(){
+  const inp = sug.input;
+  if(!inp || !document.body.contains(inp)) return sugFechar();
+  if(!nBusca(inp.value)) return sugFechar();
+  if(catalogoEstado === "carregando") return sugFechar();
+  const el = sugElemento();
+  if(catalogoEstado === "erro"){
+    if(catalogoAvisoDado) return sugFechar();
+    catalogoAvisoDado = true; // aviso discreto, só uma vez
+    sug.itens = []; sug.ativo = -1;
+    el.innerHTML = '<div class="cat-aviso">O catálogo de peças não carregou agora. Sem problema: digite o modelo normalmente.</div>';
+    sugAbrir();
+    return;
+  }
+  const res = buscarCatalogo(sug.cat, inp.value);
+  if(!res.length) return sugFechar();
+  sug.itens = res; sug.ativo = -1;
+  el.innerHTML = res.map(function(it, i){
+    const det = [it.f, it.p, it.t].filter(Boolean).join(" · ");
+    return '<div class="cat-item" role="option" id="cat-op-' + i + '" data-i="' + i + '" aria-selected="false"><b>' + esc(it.m) + '</b>' + (det ? '<small>' + esc(det) + '</small>' : '') + '</div>';
+  }).join("");
+  el.scrollTop = 0;
+  sugAbrir();
+}
+
+function sugMover(d){
+  const n = sug.itens.length;
+  if(!n) return;
+  sug.ativo = sug.ativo < 0 ? (d > 0 ? 0 : n - 1) : (sug.ativo + d + n) % n;
+  sug.el.querySelectorAll(".cat-item").forEach(function(x, i){
+    const on = i === sug.ativo;
+    x.classList.toggle("ativo", on);
+    x.setAttribute("aria-selected", on ? "true" : "false");
+    if(on){ sug.input.setAttribute("aria-activedescendant", x.id); x.scrollIntoView({ block: "nearest" }); }
+  });
+}
+
+// Põe o valor no campo do formulário só se ele existir e a opção for uma das que o site já conhece
+function definirOpcao(cont, k, valor){
+  if(!valor) return false;
+  const sel = cont.querySelector('select[data-k="' + k + '"][data-p="v"]');
+  if(!sel) return false;
+  const alvo = Array.from(sel.options).find(function(o){ return o.value && nBusca(o.value) === nBusca(valor); });
+  if(!alvo) return false;
+  sel.value = alvo.value;
+  return true;
+}
+
+function sugEscolher(i){
+  const it = sug.itens[i], inp = sug.input, cont = sug.cont;
+  if(!it || !inp || !cont) return;
+  inp.value = it.m;
+  // tipo / polaridade / canal (conforme a categoria) e encapsulamento
+  ["tipo", "canal", "func"].some(function(k){
+    return definirOpcao(cont, k, it.t) || (k === "canal" && definirOpcao(cont, k, "Canal " + it.t));
+  });
+  definirOpcao(cont, "encap", it.p);
+  const velha = cont.querySelector(".cat-nota");
+  if(velha) velha.remove();
+  if(/^https?:\/\//i.test(it.d)){
+    const nota = document.createElement("div");
+    nota.className = "cat-nota";
+    nota.appendChild(document.createTextNode("Datasheet: "));
+    const a = document.createElement("a");
+    a.href = it.d; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "abrir";
+    nota.appendChild(a);
+    cont.appendChild(nota);
+  }
+  sugFechar();
+}
+
+document.addEventListener("focusin", function(e){
+  const inp = campoModelo(e.target);
+  if(inp){ inp.setAttribute("autocomplete", "off"); inp.setAttribute("role", "combobox"); inp.setAttribute("aria-autocomplete", "list"); inp.setAttribute("aria-controls", "cat-sug"); }
+});
+document.addEventListener("focusout", function(e){
+  if(e.target === sug.input) setTimeout(function(){ if(document.activeElement !== sug.input) sugFechar(); }, 200);
+});
+document.addEventListener("input", function(e){
+  const t = e.target;
+  const inp = campoModelo(t);
+  if(inp){
+    const cont = contDoCampo(inp);
+    const nota = cont.querySelector(".cat-nota");
+    if(nota) nota.remove();
+    sug.input = inp; sug.cont = cont; sug.cat = catDoCont(cont);
+    clearTimeout(sug.timer);
+    sug.timer = setTimeout(sugBuscar, CATALOGO_ATRASO);
+    return;
+  }
+  if(t.classList && t.classList.contains("cod-cap-in")) decodificarCapacitor(t);
+});
+document.addEventListener("keydown", function(e){
+  if(!sug.el || sug.el.hidden || e.target !== sug.input) return;
+  if(e.key === "ArrowDown"){ e.preventDefault(); sugMover(1); }
+  else if(e.key === "ArrowUp"){ e.preventDefault(); sugMover(-1); }
+  else if(e.key === "Enter"){ if(sug.ativo >= 0){ e.preventDefault(); sugEscolher(sug.ativo); } }
+  else if(e.key === "Escape"){ e.preventDefault(); sugFechar(); }
+  else if(e.key === "Tab"){ sugFechar(); }
+});
+document.addEventListener("change", function(e){
+  if(e.target && e.target.matches && e.target.matches("#categoria, .peca-cat")) sugFechar();
+});
+window.addEventListener("resize", sugPosicionar);
+if(window.visualViewport) window.visualViewport.addEventListener("resize", sugPosicionar);
+
+// ===== Decodificador de capacitores ("104" -> 100 nF) =====
+const COD_CAP_TOL = { F: "±1%", G: "±2%", J: "±5%", K: "±10%", M: "±20%", Z: "+80/−20%" };
+
+// 3 dígitos (+ letra de tolerância opcional). Valor em pF = 2 primeiros dígitos × 10^(3º dígito);
+// 3º dígito 8 = ×0,01 e 9 = ×0,1 (convenção padrão para valores bem pequenos)
+function decodificarCodigoCapacitor(txt){
+  const t = String(txt || "").replace(/\s+/g, "").toUpperCase();
+  const m = /^(\d{2})(\d)([BCDFGHJKMZ])?$/.exec(t);
+  if(!m) return null;
+  const base = parseInt(m[1], 10), mult = parseInt(m[2], 10);
+  const pf = mult <= 7 ? base * Math.pow(10, mult) : (mult === 8 ? base / 100 : base / 10);
+  if(!(pf > 0)) return null;
+  let valor, un;
+  if(pf >= 1e6){ valor = pf / 1e6; un = "µF"; }
+  else if(pf >= 1e3){ valor = pf / 1e3; un = "nF"; }
+  else { valor = pf; un = "pF"; }
+  valor = parseFloat(valor.toPrecision(6));
+  return { codigo: t, num: String(valor), un: un, tol: m[3] ? (COD_CAP_TOL[m[3]] || "") : "" };
+}
+
+function codCapHtml(cat){
+  if(cat !== "Capacitores") return "";
+  return '<label class="cod-cap">Código impresso <span style="font-weight:normal;opacity:0.75">(opcional)</span>' +
+    '<input class="cod-cap-in" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ex.: 104 ou 104J">' +
+    '<span class="cod-cap-res" aria-live="polite"></span></label>';
+}
+
+function decodificarCapacitor(inp){
+  const res = inp.closest(".cod-cap").querySelector(".cod-cap-res");
+  const cont = inp.closest("#campos, .peca-campos");
+  function msg(t, cls){ res.textContent = t; res.className = "cod-cap-res" + (cls ? " " + cls : ""); }
+  const bruto = inp.value.replace(/\s+/g, "");
+  if(!bruto || /^\d{0,2}$/.test(bruto)) return msg(""); // vazio ou ainda digitando
+  const r = decodificarCodigoCapacitor(bruto);
+  if(!r) return msg("Código não reconhecido. Use 3 números, como 104 (ou 104J, com a letra de tolerância).", "erro");
+  const num = cont.querySelector('input[data-k="cap"][data-p="v"]');
+  const un = cont.querySelector('select[data-k="cap"][data-p="u"]');
+  if(num) num.value = r.num;
+  if(un) un.value = r.un;
+  // tipo "Cerâmico" só como padrão: não mexe se a pessoa já escolheu outro tipo
+  const tipo = cont.querySelector('select[data-k="tipo"][data-p="v"]');
+  if(tipo && !tipo.value) definirOpcao(cont, "tipo", "Cerâmico");
+  msg(r.codigo + " = " + r.num.replace(".", ",") + " " + r.un + (r.tol ? " (tolerância " + r.tol + ")" : ""), "ok-cod");
+}
+
 // --- Eventos ---
 $("btn-novo-projeto").addEventListener("click", function(){ abrirFormProjeto(null); });
 $("btn-voltar-projetos").addEventListener("click", voltarProjetos);
@@ -3143,6 +3479,7 @@ ouvirPerfis();
 ouvirComentarios();
 ouvirSeguindo();
 ouvirModeradores();
+carregarCatalogo();
 
 $("busca-projetos").addEventListener("input", renderProjetos);
 $("filtro-tipo-projeto").addEventListener("change", renderProjetos);
