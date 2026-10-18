@@ -86,6 +86,45 @@ button.text-btn:hover{color:var(--text)}
 .ia-rev-item.incompleto{color:var(--muted)}
 .ia-rev-nota{font-size:13px;color:var(--muted);display:block}
 .ia-revisao .actions{margin-top:10px}
+.rapido{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.rapido-topo{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.rapido-palco{border:1px solid var(--line);border-radius:8px;padding:10px 8px 8px;background:var(--bg);cursor:pointer;text-align:center}
+.rapido-palco:focus{outline:2px solid var(--accent);outline-offset:2px}
+.rapido-palco svg{width:100%;max-width:560px;height:auto;display:block;margin:0 auto;color:var(--muted)}
+.rapido-dica{margin:6px 0 0;font-size:13px}
+.rapido-linha{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 26px;margin-top:14px;align-items:center}
+.rapido-grupo{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;align-items:center}
+.rapido-grupo>span{font-size:13px;color:var(--muted);margin-right:2px}
+.rap-op{min-height:34px;padding:5px 12px}
+.rap-op.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.rapido-paleta{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;max-width:640px;margin:26px auto 0}
+.rap-cor{flex-direction:column;gap:4px;padding:6px 2px;min-height:0}
+.rap-amostra{width:24px;height:24px;border-radius:50%;border:1px solid rgba(128,128,128,.6);flex:0 0 auto}
+.rap-tecla{font-family:ui-monospace,Consolas,monospace;font-weight:700;border:1px solid var(--line);border-radius:3px;padding:0 5px;font-size:12px;line-height:1.4}
+.rap-cor.indisp{opacity:.35}
+.rapido-valor{margin:14px 0 0;white-space:pre-line;font-weight:500;min-height:2.8em;text-align:center}
+.rapido-acoes{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;align-items:center;margin-top:8px}
+.rapido-fila{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.rapido-fila[hidden]{display:none}
+.rapido-fila-topo{font-weight:600;margin-bottom:6px}
+.rap-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)}
+.rap-item:first-child{border-top:none}
+.rap-pontos{display:flex;gap:3px}
+.rap-ponto{width:10px;height:22px;border-radius:2px;border:1px solid rgba(128,128,128,.6)}
+.rap-item-txt{flex:1;min-width:150px}
+.rap-qtd{display:flex;align-items:center;gap:8px}
+.rap-qtd button{min-height:30px;width:30px;padding:0;justify-content:center}
+.rapido-fila-acoes{margin-top:10px}
+.rap-leg{font-size:11px;fill:currentColor;text-anchor:middle}
+.rap-vazio{fill:none;stroke:currentColor;stroke-width:1.5;stroke-dasharray:4 4;opacity:.45}
+.rap-prox{stroke:var(--accent);opacity:1;animation:rapidoPulso 1.2s ease-in-out infinite}
+.rap-faixa.nova{transform-box:fill-box;transform-origin:50% 0;animation:rapidoPintar .45s ease-out both}
+.rapido-palco.recusa{animation:rapidoTremer .35s}
+@keyframes rapidoPintar{from{transform:scaleY(0)}65%{transform:scaleY(1.06)}to{transform:scaleY(1)}}
+@keyframes rapidoPulso{50%{opacity:.3}}
+@keyframes rapidoTremer{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media (max-width:640px){.rapido-paleta{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){.rap-faixa.nova,.rap-prox,.rapido-palco.recusa{animation:none}}
 .google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:600}
 .google-btn:hover{background:#f1f3f4}
 .google-btn:disabled{opacity:.6;cursor:default}
@@ -381,6 +420,35 @@ button.com-denunciar{color:var(--muted)}
         </div>
         <p id="msg" class="msg" role="status"></p>
       </form>
+      <div class="rapido" id="rapido">
+        <div class="rapido-topo">
+          <strong>Modo rápido: resistor</strong>
+          <span class="muted">Está com um resistor na mão e não sabe o valor? Pinte as faixas dele aqui, na ordem. Segure-o com a faixa dourada ou prateada (tolerância) à direita. Ao terminar as cores, o resistor vai para uma lista de espera até você confirmar.</span>
+        </div>
+        <div class="rapido-palco" id="rapido-palco" tabindex="0" role="application" aria-label="Resistor: use o teclado para pintar as faixas">
+          <svg id="rapido-svg" viewBox="0 0 520 160" role="img" aria-label="Resistor com faixas de cores"></svg>
+          <p class="rapido-dica muted" id="rapido-dica">Clique no resistor e digite as cores no teclado (ou toque nas cores abaixo).</p>
+        </div>
+        <div class="rapido-linha">
+          <div class="rapido-grupo" id="rapido-faixas"></div>
+          <div class="rapido-grupo" id="rapido-watts"></div>
+        </div>
+        <div class="rapido-paleta" id="rapido-paleta"></div>
+        <p class="rapido-valor" id="rapido-valor" role="status"></p>
+        <div class="rapido-acoes">
+          <button type="button" id="rapido-desfazer">Desfazer faixa</button>
+          <button type="button" id="rapido-limpar">Limpar faixas</button>
+        </div>
+        <p id="rapido-msg" class="msg" role="status"></p>
+        <div class="rapido-fila" id="rapido-fila" hidden>
+          <div class="rapido-fila-topo" id="rapido-fila-titulo"></div>
+          <div id="rapido-fila-lista"></div>
+          <div class="actions rapido-fila-acoes">
+            <button type="button" class="primary" id="rapido-confirmar">Adicionar todos ao inventário</button>
+            <button type="button" id="rapido-fila-limpar">Esvaziar lista</button>
+          </div>
+        </div>
+      </div>
       <div class="ia-caixa ia-texto inv-ia">
         <label for="inv-lista-texto"><strong>Já tem uma lista de peças?</strong> Digite ou cole aqui e a IA organiza e completa para você (opcional)</label>
         <textarea id="inv-lista-texto" rows="4" maxlength="2000" placeholder="ex.: 20 resistores de 10k, 5 capacitores de 100nF, 3 transistores BC547, 2 LEDs vermelhos"></textarea>
@@ -709,7 +777,7 @@ const CAT={
   "Resistores":{n:"Resistor",c:[
     {k:"ohms",l:"Resistência",t:"valor",u:["Ω","kΩ","MΩ"],ex:"ex.: 10"},
     {k:"watts",l:"Potência",t:"opcoes",o:["1/8 W","1/4 W","1/2 W","1 W","2 W","5 W","10 W"]},
-    {k:"tol",l:"Tolerância",t:"opcoes",o:["","1%","2%","5%","10%","20%"],opcional:1},
+    {k:"tol",l:"Tolerância",t:"opcoes",o:["","0.05%","0.1%","0.25%","0.5%","1%","2%","5%","10%","20%"],opcional:1},
     {k:"tipo",l:"Tipo",t:"opcoes",o:["","Fixo","Variável","SMD","De fio","Rede resistiva"],opcional:1},
     {k:"mat",l:"Material de fabricação",t:"opcoes",o:["","Filme de carbono","Filme metálico","Fio","Óxido metálico","Composição de carbono"],opcional:1},
     {k:"encap",l:"Encapsulamento",t:"opcoes",o:["","PTH (Axial)","SMD 0402","SMD 0603","SMD 0805","SMD 1206","SMD 1210","SMD 2010","SMD 2512"],opcional:1},
@@ -948,6 +1016,7 @@ onAuthStateChanged(auth, (user) => {
     invIaFechar();
     $("inv-lista-texto").value = "";
     $("inv-ia-texto").disabled = true;
+    rapidoLimparTudo();
     usernameForcado = false;
     editandoPerfil = false;
     $("menu-logado").hidden = true;
@@ -3830,6 +3899,264 @@ $("inv-ia-adicionar").addEventListener("click", function(){
 $("inv-ia-descartar").addEventListener("click", function(){ invIaFechar(); invIaMsg("", false); });
 $("inv-ia-texto").addEventListener("click", invIaAnalisar);
 $("inv-lista-texto").addEventListener("input", function(){ $("inv-ia-texto").disabled = !this.value.trim(); });
+
+// --- Modo rápido: resistor pelo código de cores (teclado ou toque) ---
+// Cada cor: tecla, nome, cor na tela, dígito, multiplicador, tolerância (%), coeficiente de temperatura (ppm/°C)
+const RAP_COR = [
+  {k:"1", nome:"marrom",   hex:"#8b4a1e", dig:1,    mult:10,   tol:1,    tc:100},
+  {k:"2", nome:"vermelho", hex:"#d92b2b", dig:2,    mult:100,  tol:2,    tc:50},
+  {k:"3", nome:"laranja",  hex:"#f08a1c", dig:3,    mult:1e3,  tol:null, tc:15},
+  {k:"4", nome:"amarelo",  hex:"#f2d11b", dig:4,    mult:1e4,  tol:null, tc:25},
+  {k:"5", nome:"verde",    hex:"#2e9e4f", dig:5,    mult:1e5,  tol:0.5,  tc:20},
+  {k:"6", nome:"azul",     hex:"#2a6fdb", dig:6,    mult:1e6,  tol:0.25, tc:10},
+  {k:"7", nome:"violeta",  hex:"#8a4fd0", dig:7,    mult:1e7,  tol:0.1,  tc:5},
+  {k:"8", nome:"cinza",    hex:"#8c8f94", dig:8,    mult:1e8,  tol:0.05, tc:1},
+  {k:"9", nome:"branco",   hex:"#f4f4f4", dig:9,    mult:1e9,  tol:null, tc:null},
+  {k:"0", nome:"preto",    hex:"#151515", dig:0,    mult:1,    tol:null, tc:250},
+  {k:"-", nome:"dourado",  hex:"#d4a72c", dig:null, mult:0.1,  tol:5,    tc:null},
+  {k:"=", nome:"prateado", hex:"#c4c8cf", dig:null, mult:0.01, tol:10,   tc:null}
+];
+// d = dígito, m = multiplicador, t = tolerância, c = coeficiente de temperatura
+const RAP_PAPEIS = { 4:["d","d","m","t"], 5:["d","d","d","m","t"], 6:["d","d","d","m","t","c"] };
+const RAP_NOME_PAPEL = { m:"multiplicador", t:"tolerância", c:"coeficiente de temperatura" };
+// fila = lista de espera: resistores já pintados, aguardando a confirmação para entrar no inventário
+const rapido = { n: 4, w: "1/4 W", cores: [], nova: -1, fila: [], timer: null };
+const RAP_ATRASO_FILA = 900;   // ms entre pintar a última faixa e o resistor ir para a lista de espera
+
+function rapidoMsg(t, erro){ const m = $("rapido-msg"); m.textContent = t; m.className = erro ? "msg erro" : "msg"; }
+
+function rapidoNomeFaixa(pos){
+  const p = RAP_PAPEIS[rapido.n][pos];
+  return p === "d" ? (pos + 1) + "º dígito" : RAP_NOME_PAPEL[p];
+}
+
+// Devolve o motivo da recusa (texto) ou "" se a cor pode ir nessa faixa
+function rapidoRecusa(pos, cor){
+  const p = RAP_PAPEIS[rapido.n][pos];
+  if(p === "d"){
+    if(cor.dig === null) return "Nos dígitos só valem de preto a branco. Dourado e prateado não entram aqui.";
+    if(pos === 0 && cor.dig === 0) return "A primeira faixa não pode ser preta.";
+  }
+  if(p === "t" && cor.tol === null) return "Na tolerância só valem marrom, vermelho, verde, azul, violeta, cinza, dourado e prateado.";
+  if(p === "c" && cor.tc === null) return "No coeficiente de temperatura só valem marrom, vermelho, laranja, amarelo, verde, azul, violeta, cinza e preto.";
+  return "";
+}
+
+function rapidoFormatarOhms(v){
+  let n = v, u = "Ω";
+  if(v >= 1e6){ n = v / 1e6; u = "MΩ"; } else if(v >= 1e3){ n = v / 1e3; u = "kΩ"; }
+  return String(Number(n.toPrecision(6))) + " " + u;
+}
+
+function rapidoResultado(){
+  if(rapido.cores.length < rapido.n) return null;
+  const papeis = RAP_PAPEIS[rapido.n];
+  const dc = papeis.filter(function(p){ return p === "d"; }).length;
+  const dig = parseInt(rapido.cores.slice(0, dc).map(function(c){ return c.dig; }).join(""), 10);
+  const ohms = Number((dig * rapido.cores[dc].mult).toPrecision(10));
+  return {
+    ohms: ohms,
+    ohmsTxt: rapidoFormatarOhms(ohms),
+    tolTxt: String(rapido.cores[dc + 1].tol) + "%",
+    tc: rapido.n === 6 ? rapido.cores[dc + 2].tc : null
+  };
+}
+
+function rapidoDesenhar(){
+  const n = rapido.n, papeis = RAP_PAPEIS[n], esq = n === 6 ? 4 : n - 1;
+  let svg = '<line x1="10" y1="80" x2="140" y2="80" stroke="#9aa0a6" stroke-width="7" stroke-linecap="round"/>' +
+            '<line x1="380" y1="80" x2="510" y2="80" stroke="#9aa0a6" stroke-width="7" stroke-linecap="round"/>' +
+            '<ellipse cx="126" cy="80" rx="16" ry="48" fill="#c9a972"/><ellipse cx="394" cy="80" rx="16" ry="48" fill="#c9a972"/>' +
+            '<rect x="118" y="38" width="284" height="84" rx="26" fill="#d8b98a"/>';
+  for(let i = 0; i < n; i++){
+    const x = i < esq ? 150 + i * 34 : (n === 6 ? 330 + (i - esq) * 34 : 356);
+    const cor = rapido.cores[i];
+    if(cor){
+      svg += '<rect class="rap-faixa' + (i === rapido.nova ? ' nova' : '') + '" x="' + x + '" y="38" width="16" height="84" fill="' + cor.hex + '" stroke="rgba(0,0,0,.35)" stroke-width="1"/>';
+    }else{
+      svg += '<rect class="rap-vazio' + (i === rapido.cores.length ? ' rap-prox' : '') + '" x="' + x + '" y="38" width="16" height="84" rx="3"/>';
+    }
+    const leg = papeis[i] === "d" ? (i + 1) + "º" : (papeis[i] === "m" ? "×" : (papeis[i] === "t" ? "tol." : "ppm"));
+    svg += '<text class="rap-leg" x="' + (x + 8) + '" y="148">' + leg + '</text>';
+  }
+  svg += '<rect x="140" y="44" width="240" height="12" rx="6" fill="#fff" opacity=".18"/>';
+  $("rapido-svg").innerHTML = svg;
+
+  // cores que não servem para a próxima faixa ficam apagadas na paleta
+  const pos = rapido.cores.length;
+  Array.prototype.forEach.call($("rapido-paleta").querySelectorAll(".rap-cor"), function(b){
+    const cor = RAP_COR.find(function(c){ return c.k === b.dataset.k; });
+    b.classList.toggle("indisp", pos >= n || !!rapidoRecusa(pos, cor));
+  });
+
+  const r = rapidoResultado();
+  const nomes = rapido.cores.map(function(c){ return c.nome; }).join(" · ");
+  let txt;
+  if(r) txt = "Resistência: " + r.ohmsTxt + " · tolerância " + r.tolTxt + (r.tc !== null ? " · " + r.tc + " ppm/°C" : "") + " · " + rapido.w;
+  else if(pos) txt = "Próxima faixa: " + rapidoNomeFaixa(pos);
+  else txt = "Pinte a 1ª faixa (" + rapidoNomeFaixa(0) + ").";
+  $("rapido-valor").textContent = txt + (nomes ? "\n" + nomes : "");
+}
+
+function rapidoDesenharFila(){
+  const total = rapido.fila.reduce(function(s, x){ return s + x.qtd; }, 0);
+  $("rapido-fila").hidden = rapido.fila.length === 0;
+  $("rapido-fila-titulo").textContent = "Lista de espera: " + total + (total === 1 ? " resistor aguardando" : " resistores aguardando") + " confirmação";
+  $("rapido-fila-lista").innerHTML = rapido.fila.map(function(x, i){
+    const pontos = x.cores.map(function(h){ return '<span class="rap-ponto" style="background:' + h + '"></span>'; }).join("");
+    const det = esc(x.ohmsTxt) + " · " + esc(x.tolTxt) + " · " + esc(x.w) + (x.tc !== null ? " · " + x.tc + " ppm/°C" : "");
+    return '<div class="rap-item"><span class="rap-pontos">' + pontos + '</span><span class="rap-item-txt">' + det + '</span>' +
+      '<span class="rap-qtd"><button type="button" data-a="menos" data-i="' + i + '"' + (x.qtd <= 1 ? ' disabled' : '') + ' aria-label="Diminuir quantidade">−</button><strong>' + x.qtd + '</strong>' +
+      '<button type="button" data-a="mais" data-i="' + i + '" aria-label="Aumentar quantidade">+</button></span>' +
+      '<button type="button" class="text-btn" data-a="remover" data-i="' + i + '">Remover</button></div>';
+  }).reverse().join("");   // o último colocado fica no topo, perto do resistor que está sendo pintado
+}
+
+// Passa o resistor que está completo para a lista de espera (resistores iguais somam a quantidade)
+function rapidoFechar(){
+  clearTimeout(rapido.timer); rapido.timer = null;
+  const r = rapidoResultado();
+  if(!r) return;
+  const item = { ohmsTxt: r.ohmsTxt, tolTxt: r.tolTxt, tc: r.tc, w: rapido.w, qtd: 1, cores: rapido.cores.map(function(c){ return c.hex; }) };
+  const nome = item.ohmsTxt + " " + item.tolTxt + " " + item.w;
+  const igual = rapido.fila.find(function(x){ return x.ohmsTxt === item.ohmsTxt && x.tolTxt === item.tolTxt && x.tc === item.tc && x.w === item.w; });
+  if(igual){
+    igual.qtd = Math.min(9999, igual.qtd + 1);
+    rapido.fila.splice(rapido.fila.indexOf(igual), 1);
+    rapido.fila.push(igual);
+    rapidoMsg("Mais um resistor " + nome + ": agora são " + igual.qtd + " na lista de espera.", false);
+  }else{
+    rapido.fila.push(item);
+    rapidoMsg("Resistor " + nome + " entrou na lista de espera.", false);
+  }
+  rapido.cores = []; rapido.nova = -1;
+  rapidoDesenhar();
+  rapidoDesenharFila();
+}
+
+function rapidoPintar(cor){
+  if(rapido.cores.length >= rapido.n) rapidoFechar();   // já estava completo: manda para a lista e começa o próximo
+  const pos = rapido.cores.length, erro = rapidoRecusa(pos, cor);
+  if(erro){
+    const palco = $("rapido-palco");
+    palco.classList.remove("recusa"); void palco.offsetWidth; palco.classList.add("recusa");
+    return rapidoMsg(erro, true);
+  }
+  if(/erro/.test($("rapido-msg").className)) rapidoMsg("", false);
+  rapido.cores.push(cor);
+  rapido.nova = pos;
+  rapidoDesenhar();
+  if(rapido.cores.length === rapido.n){
+    clearTimeout(rapido.timer);
+    rapido.timer = setTimeout(rapidoFechar, RAP_ATRASO_FILA);
+  }
+}
+function rapidoDesfazer(){
+  clearTimeout(rapido.timer); rapido.timer = null;
+  if(!rapido.cores.length) return;
+  rapido.cores.pop(); rapido.nova = -1; rapidoMsg("", false); rapidoDesenhar();
+}
+function rapidoLimpar(){
+  clearTimeout(rapido.timer); rapido.timer = null;
+  rapido.cores = []; rapido.nova = -1; rapidoMsg("", false); rapidoDesenhar();
+}
+function rapidoLimparTudo(){ rapidoLimpar(); rapido.fila = []; rapidoDesenharFila(); }
+
+// Confirma: todos da lista de espera entram no inventário (os iguais aos que já existem somam a quantidade)
+function rapidoConfirmar(){
+  rapidoFechar();
+  if(!rapido.fila.length) return rapidoMsg("A lista de espera está vazia.", true);
+  if(!currentUser) return rapidoMsg("Você precisa estar logado para salvar itens.", true);
+  if(!canSave) return rapidoMsg("Aguarde, conectando ao servidor...", true);
+  let somados = 0, total = 0;
+  rapido.fila.forEach(function(x){
+    const campos = { ohms: x.ohmsTxt, watts: x.w, tol: x.tolTxt };
+    if(x.tc !== null) campos.temp = x.tc + " ppm/°C";
+    const d = { categoria: "Resistores", campos: campos, quantidade: x.qtd, obs: "" };
+    const igual = itens.find(function(i){ return chave(i) === chave(d); });
+    if(igual){ igual.quantidade = (parseInt(igual.quantidade, 10) || 0) + x.qtd; somados++; }
+    else itens.push({ id: novoId(), ...d });
+    total += x.qtd;
+  });
+  rapido.fila = [];
+  pendingDel = null;
+  rapidoMsg(total + (total === 1 ? " resistor adicionado" : " resistores adicionados") + " ao inventário" +
+    (somados ? " (" + somados + (somados === 1 ? " tipo somado a um que você já tinha)" : " tipos somados a outros que você já tinha)") : "") + ".", false);
+  rapidoDesenhar();
+  rapidoDesenharFila();
+  render();
+  persist();
+}
+
+function rapidoMontarControles(){
+  $("rapido-faixas").innerHTML = '<span>Faixas:</span>' + [4, 5, 6].map(function(n){
+    return '<button type="button" class="rap-op' + (n === rapido.n ? ' sel' : '') + '" data-n="' + n + '" aria-pressed="' + (n === rapido.n) + '">' + n + '</button>';
+  }).join("");
+  const watts = CAT["Resistores"].c.find(function(f){ return f.k === "watts"; }).o;
+  $("rapido-watts").innerHTML = '<span>Potência:</span>' + watts.map(function(w){
+    return '<button type="button" class="rap-op' + (w === rapido.w ? ' sel' : '') + '" data-w="' + esc(w) + '" aria-pressed="' + (w === rapido.w) + '">' + esc(w) + '</button>';
+  }).join("");
+  $("rapido-paleta").innerHTML = RAP_COR.map(function(c){
+    return '<button type="button" class="rap-cor" data-k="' + c.k + '" title="' + c.nome + '" aria-label="' + c.nome + ' (tecla ' + c.k + ')"><span class="rap-amostra" style="background:' + c.hex + '"></span><span class="rap-tecla">' + c.k + '</span></button>';
+  }).join("");
+}
+function rapidoFocarPalco(){ try{ $("rapido-palco").focus({ preventScroll: true }); }catch(e){} }
+
+$("rapido-palco").addEventListener("click", rapidoFocarPalco);
+$("rapido-palco").addEventListener("focus", function(){ $("rapido-dica").textContent = "Teclado ativo: 1 marrom, 2 vermelho, 3 laranja, 4 amarelo, 5 verde, 6 azul, 7 violeta, 8 cinza, 9 branco, 0 preto, - dourado, = prateado. Backspace desfaz, Enter confirma a lista de espera."; });
+$("rapido-palco").addEventListener("blur", function(){ $("rapido-dica").textContent = "Clique no resistor e digite as cores no teclado (ou toque nas cores abaixo)."; });
+$("rapido-paleta").addEventListener("click", function(e){
+  const b = e.target.closest(".rap-cor"); if(!b) return;
+  rapidoPintar(RAP_COR.find(function(c){ return c.k === b.dataset.k; }));
+  rapidoFocarPalco();
+});
+$("rapido-faixas").addEventListener("click", function(e){
+  const b = e.target.closest("button[data-n]"); if(!b) return;
+  const n = parseInt(b.dataset.n, 10);
+  if(n === rapido.n) return rapidoFocarPalco();
+  rapidoFechar();
+  const tinha = rapido.cores.length > 0;
+  rapido.n = n; rapido.cores = []; rapido.nova = -1;
+  rapidoMontarControles(); rapidoDesenhar();
+  if(tinha) rapidoMsg("Número de faixas alterado: comece a pintar de novo.", false);
+  rapidoFocarPalco();
+});
+$("rapido-watts").addEventListener("click", function(e){
+  const b = e.target.closest("button[data-w]"); if(!b) return;
+  rapidoFechar();
+  rapido.w = b.dataset.w;
+  rapidoMontarControles(); rapidoDesenhar();
+  rapidoFocarPalco();
+});
+$("rapido-fila-lista").addEventListener("click", function(e){
+  const b = e.target.closest("button[data-a]"); if(!b) return;
+  const i = parseInt(b.dataset.i, 10), x = rapido.fila[i];
+  if(!x) return;
+  if(b.dataset.a === "mais") x.qtd = Math.min(9999, x.qtd + 1);
+  else if(b.dataset.a === "menos") x.qtd = Math.max(1, x.qtd - 1);
+  else rapido.fila.splice(i, 1);
+  rapidoDesenharFila();
+  rapidoFocarPalco();
+});
+$("rapido-confirmar").addEventListener("click", rapidoConfirmar);
+$("rapido-fila-limpar").addEventListener("click", function(){ rapido.fila = []; rapidoDesenharFila(); rapidoMsg("", false); rapidoFocarPalco(); });
+$("rapido-desfazer").addEventListener("click", function(){ rapidoDesfazer(); rapidoFocarPalco(); });
+$("rapido-limpar").addEventListener("click", function(){ rapidoLimpar(); rapidoFocarPalco(); });
+$("rapido").addEventListener("keydown", function(e){
+  const t = e.target;
+  if(t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  if(e.key === "Backspace"){ e.preventDefault(); return rapidoDesfazer(); }
+  if(e.key === "Escape"){ return rapidoLimpar(); }
+  if(e.key === "Enter" && !(t && t.tagName === "BUTTON")){ e.preventDefault(); return rapidoConfirmar(); }
+  const k = e.key === "+" ? "=" : e.key;
+  const cor = RAP_COR.find(function(c){ return c.k === k; });
+  if(cor){ e.preventDefault(); if(!e.repeat) rapidoPintar(cor); }
+});
+rapidoMontarControles();
+rapidoDesenhar();
+rapidoDesenharFila();
+
 
 
 $("np-cancelar").addEventListener("click", function(){
