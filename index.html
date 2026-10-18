@@ -249,6 +249,7 @@ button.com-excluir{background:transparent;border:none;color:var(--warn);padding:
 .projeto-pecas ul li{margin:4px 0;display:grid;grid-template-columns:14px 1fr auto;column-gap:8px;align-items:baseline}
 .projeto-pecas ul li::before{content:"\2022"}
 .projeto-pecas .estado{text-align:right;white-space:nowrap}
+.projeto-pecas .combo-dica{grid-column:2 / -1;font-size:13px;color:var(--muted);margin:2px 0 4px}
 @media(max-width:560px){.projeto-pecas ul li{grid-template-columns:14px 1fr}.projeto-pecas .estado{grid-column:2;text-align:right}}
 .np-secao{margin:16px 0}
 .np-secao>p{margin:4px 0 12px}
@@ -1614,7 +1615,139 @@ function ordemRelaxada(peca){
 let compararInventario = true;
 try{ if(localStorage.getItem("ohmia-comparar") === "0") compararInventario = false; }catch(e){}
 
-function avaliarProjeto(p){
+// ---- Sugestão de associação série/paralelo (só resistores e capacitores) ----
+// Quando falta uma peça, procura no que SOBRA do inventário combinações de 2 ou 3 peças
+// que dão o valor pedido e aguentam a potência (resistor) ou a tensão (capacitor) pedida.
+const COMBO_CFG = {
+  "Resistores":  { valor: "ohms", limite: "watts" },
+  "Capacitores": { valor: "cap",  limite: "tensao" }
+};
+
+function comboFormatarCap(v){
+  let n, u;
+  if(v < 1e-9){ n = v * 1e12; u = "pF"; }
+  else if(v < 1e-6){ n = v * 1e9; u = "nF"; }
+  else if(v < 1e-3){ n = v * 1e6; u = "µF"; }
+  else { n = v * 1e3; u = "mF"; }
+  return String(Number(n.toPrecision(4))) + " " + u;
+}
+
+function sugerirAssociacao(peca, restante, faltam){
+  const cfg = COMBO_CFG[peca.categoria];
+  if(!cfg || !peca.campos || !peca.campos[cfg.valor]) return null;
+  const ehRes = peca.categoria === "Resistores";
+  const defs = CAT[peca.categoria].c;
+  const defLim = defs.find(function(d){ return d.k === cfg.limite; });
+  const alvo = valorNumerico(peca.campos[cfg.valor]);
+  if(alvo === null || alvo <= 0) return null;
+  const limPedido = peca.campos[cfg.limite] ? numeroRelaxado(defLim, peca.campos[cfg.limite]) : null;
+
+  // quão perto do valor pedido vale: a tolerância pedida, ou 5% se o projeto não disser
+  let tolPct = 5;
+  const defTol = defs.find(function(d){ return d.k === "tol"; });
+  if(peca.campos.tol && defTol){
+    const t = numeroRelaxado(defTol, peca.campos.tol);
+    if(t !== null && t > 0) tolPct = t;
+  }
+
+  // as peças da associação precisam respeitar os outros campos pedidos (tolerância, polaridade, tipo...),
+  // menos o valor e o limite (potência/tensão), que dependem da associação
+  const campos = {};
+  Object.keys(peca.campos).forEach(function(k){ if(k !== cfg.valor && k !== cfg.limite) campos[k] = peca.campos[k]; });
+  const filtro = { categoria: peca.categoria, qtd: 1, obs: "", campos: campos };
+
+  // candidatos com sobra, agrupando os de mesmo valor e mesmo limite
+  const grupos = {};
+  itens.forEach(function(i){
+    if(i.categoria !== peca.categoria || !(restante[i.id] > 0) || !casa(i, filtro)) return;
+    const c = i.campos || {};
+    const v = valorNumerico(c[cfg.valor] || ""), l = numeroRelaxado(defLim, c[cfg.limite]);
+    if(v === null || v <= 0 || l === null) return;
+    const ch = v + "|" + l;
+    if(!grupos[ch]) grupos[ch] = { v: v, l: l, rest: 0, txt: c[cfg.valor], pol: c.pol };
+    grupos[ch].rest += restante[i.id];
+  });
+  const todos = Object.keys(grupos).map(function(k){ return grupos[k]; });
+  if(!todos.length) return null;
+
+  // Resistor: série soma, paralelo divide. Capacitor: o contrário.
+  // Em série cada peça tem de valer menos (resistor) ou mais (capacitor) que o total; em paralelo, o inverso.
+  function lista(modo, max){
+    const ok = todos.filter(function(g){
+      const menor = (ehRes ? modo === "serie" : modo === "paralelo");
+      return menor ? g.v < alvo : g.v > alvo;
+    });
+    ok.sort(function(a, b){ return Math.abs(Math.log(a.v / alvo)) - Math.abs(Math.log(b.v / alvo)); });
+    return ok.slice(0, max);
+  }
+  const somaDireta = function(modo){ return ehRes ? modo === "serie" : modo === "paralelo"; };
+
+  function avaliar(partes, modo){
+    let total, lim;
+    if(somaDireta(modo)){
+      total = partes.reduce(function(s, g){ return s + g.v; }, 0);
+      if(ehRes) lim = Math.min.apply(null, partes.map(function(g){ return g.l / g.v; })) * total;   // série: mesma corrente
+      else lim = Math.min.apply(null, partes.map(function(g){ return g.l; }));                      // paralelo: mesma tensão
+    }else{
+      total = 1 / partes.reduce(function(s, g){ return s + 1 / g.v; }, 0);
+      if(ehRes) lim = Math.min.apply(null, partes.map(function(g){ return g.l * g.v; })) / total;   // paralelo: mesma tensão
+      else lim = Math.min.apply(null, partes.map(function(g){ return g.l * g.v; })) / total;        // série: mesma carga
+    }
+    const desvio = Math.abs(total - alvo) / alvo * 100;
+    if(desvio > tolPct) return null;
+    if(limPedido !== null && lim < limPedido * (1 - 1e-9)) return null;
+    return { partes: partes, modo: modo, total: total, desvio: desvio, exato: desvio <= 0.05 };
+  }
+  function cabe(partes){
+    const uso = new Map();
+    partes.forEach(function(g){ uso.set(g, (uso.get(g) || 0) + 1); });
+    let ok = true;
+    uso.forEach(function(n, g){ if(g.rest < n) ok = false; });
+    return ok;
+  }
+
+  const achados = [];
+  ["serie", "paralelo"].forEach(function(modo){
+    const L = lista(modo, 40);
+    for(let a = 0; a < L.length; a++) for(let b = a; b < L.length; b++){
+      const ps = [L[a], L[b]];
+      if(!cabe(ps)) continue;
+      const r = avaliar(ps, modo); if(r) achados.push(r);
+    }
+  });
+  if(!achados.some(function(r){ return r.exato; })){
+    ["serie", "paralelo"].forEach(function(modo){
+      const L = lista(modo, 25);
+      for(let a = 0; a < L.length; a++) for(let b = a; b < L.length; b++) for(let c = b; c < L.length; c++){
+        const ps = [L[a], L[b], L[c]];
+        if(!cabe(ps)) continue;
+        const r = avaliar(ps, modo); if(r) achados.push(r);
+      }
+    });
+  }
+  if(!achados.length) return null;
+  achados.sort(function(x, y){
+    return (y.exato - x.exato) || (x.partes.length - y.partes.length) || (x.desvio - y.desvio);
+  });
+  const m = achados[0];
+
+  // texto
+  const uso = new Map(); const ordem = [];
+  m.partes.forEach(function(g){ if(!uso.has(g)) ordem.push(g); uso.set(g, (uso.get(g) || 0) + 1); });
+  const nomes = ordem.map(function(g){ return uso.get(g) > 1 ? uso.get(g) + " × " + g.txt : g.txt; });
+  const junta = m.modo === "serie" ? " + " : " e ";
+  const totalTxt = ehRes ? rapidoFormatarOhms(m.total) : comboFormatarCap(m.total);
+  let texto = "Dica: com o que sobra no seu inventário dá para montar " + nomes.join(junta) + " em " + (m.modo === "serie" ? "série" : "paralelo") +
+    " = " + (m.exato ? "" : "≈ ") + totalTxt + (m.exato ? "" : " (" + Number(m.desvio.toPrecision(2)) + "% de diferença do pedido)") + ".";
+  let unidades = Infinity;
+  ordem.forEach(function(g){ unidades = Math.min(unidades, Math.floor(g.rest / uso.get(g))); });
+  if(faltam > 1) texto += " Dá para montar " + Math.min(unidades, faltam) + " de " + faltam + ".";
+  if(!ehRes && m.modo === "serie" && m.partes.some(function(g){ return g.pol === "Polarizado"; }))
+    texto += " Atenção: capacitores polarizados em série precisam de resistores de equilíbrio; prefira os não polarizados.";
+  return { texto: texto, exato: m.exato };
+}
+
+function avaliarProjeto(p, comAssociacao){
   if(!currentUser || !compararInventario) return null;
   const restante = {};
   itens.forEach(function(i){ restante[i.id] = parseInt(i.quantidade, 10) || 0; });
@@ -1652,6 +1785,15 @@ function avaliarProjeto(p){
     resultados[idx] = { tipo: tenho >= qtd ? "ok" : "falta", qtd: qtd, tenho: tenho, faltam: qtd - tenho };
   });
 
+  // Peças que faltam: procura associações série/paralelo (resistores e capacitores) com o que sobrou
+  if(comAssociacao){
+    resultados.forEach(function(r, idx){
+      if(r.tipo !== "falta") return;
+      const c = sugerirAssociacao(norm[idx], restante, r.faltam);
+      if(c) r.combo = c;
+    });
+  }
+
   const falta = resultados.reduce(function(acc, r){ return acc + (r.tipo === "falta" ? r.faltam : 0); }, 0);
 
   if(falta === 0) return { pecas: resultados, nivel: "ok", titulo: "Você pode montar agora" };
@@ -1678,7 +1820,8 @@ function pecasHtml(p, av){
     if(!av) return '<li><span>' + txt + '</span></li>';
     const r = av.pecas[idx];
     if(r.tipo === "ok") return '<li><span>' + txt + '</span><span class="ok estado">Você tem ' + r.tenho + ' de ' + r.qtd + '</span></li>';
-    return '<li><span>' + txt + '</span><span class="falta estado">Faltam ' + r.faltam + ' (você tem ' + r.tenho + ' de ' + r.qtd + ')</span></li>';
+    return '<li><span>' + txt + '</span><span class="falta estado">Faltam ' + r.faltam + ' (você tem ' + r.tenho + ' de ' + r.qtd + ')</span>' +
+      (r.combo ? '<span class="combo-dica">' + esc(r.combo.texto) + '</span>' : '') + '</li>';
   }).join("") + '</ul>';
 }
 
@@ -1871,7 +2014,7 @@ function renderProjetos(){
 }
 
 function renderDetalhe(p){
-  const av = avaliarProjeto(p);
+  const av = avaliarProjeto(p, true);
   const fotos = p.fotos || [];
   $("det-autor").innerHTML = autorHtml(p);
   $("det-titulo").textContent = p.titulo;
