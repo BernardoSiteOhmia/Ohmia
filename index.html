@@ -1463,6 +1463,35 @@ function valoresIguais(def, a, b){
   return normTexto(a) === normTexto(b);
 }
 
+// Campos em que um valor "melhor" também serve:
+//  "maior" = o item do inventário pode ter valor IGUAL OU MAIOR que o pedido (limites máximos: tensão, corrente, potência)
+//  "menor" = o item pode ter valor IGUAL OU MENOR (tolerância: 1% serve onde se pede 5%)
+// Os demais campos (resistência, capacitância, modelo, corrente do fusível, bobina do relé etc.) precisam ser iguais.
+const RELAXAR = {
+  "Resistores": { watts: "maior", tol: "menor" },
+  "Capacitores": { tensao: "maior", tol: "menor" },
+  "Potenciômetros": { watts: "maior", tol: "menor" },
+  "Fusíveis": { tensao: "maior" },
+  "Indutores e bobinas": { amp: "maior", sat: "maior" },
+  "Diodos": { tensao: "maior", corrente: "maior" },
+  "Pontes retificadoras": { corrente: "maior", tensao: "maior", surto: "maior" },
+  "MOSFETs": { vds: "maior", id: "maior", pot: "maior" },
+  "Relés": { corrente_c: "maior", tensao_c: "maior" },
+  "Reguladores de tensão": { corrente: "maior" }
+};
+
+// Converte o valor de um campo em número comparável; devolve null se não der (aí vale a igualdade exata)
+function numeroRelaxado(def, txt){
+  const t = String(txt || "").trim();
+  if(!t) return null;
+  if(def.t === "valor") return valorNumerico(t);
+  let m = /^(\d+)\s*\/\s*(\d+)\s*W$/i.exec(t);                       // 1/4 W
+  if(m) return parseInt(m[1], 10) / parseInt(m[2], 10);
+  m = /^(\d+(?:[.,]\d+)?)\s*(?:W|%)$/i.exec(t);                        // 1 W, 5%
+  if(m) return parseFloat(m[1].replace(",", "."));
+  return null;                                                          // ex.: "+80/-20%"
+}
+
 // Um item do inventário atende a uma peça se tiver a mesma categoria
 // e os mesmos valores nos campos que o projeto preencheu. Campos em branco no projeto são ignorados.
 function casa(item, peca){
@@ -1476,8 +1505,40 @@ function casa(item, peca){
     if(!v) return true;
     const def = defs.find(function(d){ return d.k === k; });
     if(!def) return true;
+    const modo = (RELAXAR[p.categoria] || {})[k];
+    if(modo){
+      const pedida = numeroRelaxado(def, v), minha = numeroRelaxado(def, meus[k]);
+      if(pedida !== null && minha !== null){
+        const folga = 1e-9 * Math.max(1, Math.abs(pedida), Math.abs(minha));
+        return modo === "maior" ? minha >= pedida - folga : minha <= pedida + folga;
+      }
+    }
     return valoresIguais(def, meus[k], v);
   });
+}
+
+// Ordem de uso dos itens que servem: gasta primeiro o que está mais perto do pedido
+// (menor tensão/corrente/potência que ainda atende; tolerância mais folgada que ainda atende),
+// guardando os itens "melhores" para quem realmente precisa deles.
+function ordemRelaxada(peca){
+  const regras = RELAXAR[peca.categoria];
+  if(!regras || !CAT[peca.categoria]) return null;
+  const defs = CAT[peca.categoria].c;
+  const ks = Object.keys(regras).filter(function(k){ return peca.campos && peca.campos[k]; });
+  if(!ks.length) return null;
+  function pos(item, k){
+    const def = defs.find(function(d){ return d.k === k; });
+    const n = def ? numeroRelaxado(def, item.campos && item.campos[k]) : null;
+    if(n === null) return Infinity;
+    return regras[k] === "maior" ? n : -n;
+  }
+  return function(a, b){
+    for(const k of ks){
+      const va = pos(a, k), vb = pos(b, k);
+      if(va !== vb) return va < vb ? -1 : 1;
+    }
+    return 0;
+  };
 }
 
 // Preferência da pessoa: comparar ou não as peças do projeto com o próprio inventário
@@ -1508,6 +1569,8 @@ function avaliarProjeto(p){
     const peca = norm[idx];
     const qtd = Math.max(1, parseInt(peca.qtd, 10) || 1);
     const cands = itens.filter(function(i){ return casa(i, peca); });
+    const ord = ordemRelaxada(peca);
+    if(ord) cands.sort(ord);
     const disp = cands.reduce(function(s, i){ return s + restante[i.id]; }, 0);
     const tenho = Math.min(qtd, disp);
     let a = tenho;
