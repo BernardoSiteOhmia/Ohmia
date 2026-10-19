@@ -3814,7 +3814,7 @@ $("np-pecas-lista").addEventListener("change", function(e){
 
 // --- IA: analisa as fotos e sugere as peças (Firebase AI Logic + Gemini, plano gratuito) ---
 // Se um modelo sair do ar ou deixar de ser gratuito, troque/ordene os nomes nesta lista.
-const MODELOS_IA = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+const MODELOS_IA = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash"];
 const IA_VERSAO_SDK = "11.10.0";
 const IA_LIMITE_DIA = 10;      // análises por dia neste navegador (protege a cota gratuita)
 const IA_ESPERA_MS = 15000;    // intervalo mínimo entre análises
@@ -3902,6 +3902,8 @@ function iaMensagemErro(err){
   const t = String((err && (err.code + " " + err.message)) || err || "");
 if(/\b429\b|quota|RESOURCE_EXHAUSTED|rate.?limit/i.test(t)) return "A cota gratuita da IA acabou por agora. Tente de novo mais tarde ou preencha as peças manualmente.";
   if(/403|PERMISSION_DENIED|api-not-enabled|has not been used|disabled/i.test(t)) return "A IA ainda não foi ativada no Firebase (Build > AI Logic). Veja as instruções do administrador.";
+  if(/\[404/.test(t)) return "Os modelos de IA configurados não estão mais disponíveis. Avise o administrador do site para atualizar a lista de modelos.";
+  if(/\[(500|503)/.test(t)) return "A IA está sobrecarregada agora. Tente de novo em alguns minutos ou preencha as peças manualmente.";
   if(/fetch|network|Failed to fetch/i.test(t)) return "Não consegui falar com a IA. Verifique a internet e tente de novo.";
   if(/JSON|Unexpected token/i.test(t)) return "A IA respondeu em um formato inesperado. Tente de novo ou preencha as peças manualmente.";
   return "Não consegui analisar agora. Preencha as peças manualmente ou tente de novo mais tarde.";
@@ -3922,7 +3924,11 @@ async function iaGerar(entrada){
       const res = await modelo.generateContent(entrada);
       texto = res.response.text();
       break;
-    } catch (e) { ultimoErro = e; console.warn("IA: modelo " + nome + " falhou", e); }
+    } catch (e) {
+      console.warn("IA: modelo " + nome + " falhou", e);
+      // guarda o erro mais informativo: um 404 (modelo aposentado) não deve esconder um 429/500 de outro modelo
+      if(!ultimoErro || !/\[404/.test(String(e && e.message))) ultimoErro = e;
+    }
   }
   if(texto === null) throw ultimoErro;
   iaRegistrarUso();
