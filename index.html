@@ -154,6 +154,9 @@ button.text-btn:hover{color:var(--text)}
 .tag{background:var(--tag);color:var(--tag-ink);padding:2px 8px;border-radius:3px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
 .meta{margin-top:4px}
 .obs{margin-top:2px;font-size:13px;color:var(--muted);font-style:italic}
+.specs{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.spec{background:transparent;border:1px solid var(--line);border-radius:3px;padding:2px 8px;font-size:12.5px;color:var(--text);line-height:1.5}
+.spec b{font-weight:500;color:var(--muted);margin-right:4px}
 .zerado strong{opacity:.55}
 .acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .qtd{display:flex;align-items:center;gap:6px}
@@ -1303,6 +1306,16 @@ function lerCampos(){
   return o;
 }
 
+// Mostra, ao lado de cada peça de catálogo (transistor, diodo, CI...), todas as informações preenchidas além do modelo
+function especsHtml(i){
+  const c = cfg(i);
+  if(!c.m) return "";
+  const v = c.c.filter(function(f){ return f.k !== "modelo" && i.campos && i.campos[f.k]; }).map(function(f){
+    return '<span class="spec"><b>' + esc(f.l) + '</b>' + esc(i.campos[f.k]) + '</span>';
+  });
+  return v.length ? '<div class="specs">' + v.join("") + '</div>' : "";
+}
+
 function renderInventario(){
   const lista=$("lista");
   if(!currentUser){
@@ -1330,6 +1343,7 @@ function renderInventario(){
       '<div class="info">' +
         '<div class="titulo"><strong>' + esc(titulo(i)) + '</strong></div>' +
         '<div class="meta"><span class="tag">' + esc(i.categoria) + '</span></div>' +
+        especsHtml(i) +
         (i.obs ? '<div class="obs">' + esc(i.obs) + '</div>' : '') +
       '</div>' +
       '<div class="acoes">' +
