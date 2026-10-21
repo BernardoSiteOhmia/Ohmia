@@ -3187,6 +3187,17 @@ function nBusca(s){
   return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// Aceita só campos numéricos que existem na categoria, no formato "45 V" / "100 mA"
+function sanitizarSpecs(cat, e){
+  const out = {};
+  if(!e || typeof e !== "object") return out;
+  (CAT[cat] ? CAT[cat].c : []).forEach(function(f){
+    const v = e[f.k];
+    if(f.t === "valor" && typeof v === "string" && v.length <= 24 && /^\d+(\.\d+)? \S+$/.test(v.trim())) out[f.k] = v.trim();
+  });
+  return out;
+}
+
 function aplicarCatalogo(dados){
   const por = {};
   (dados.componentes || []).forEach(function(x){
@@ -3199,6 +3210,7 @@ function aplicarCatalogo(dados){
       p: typeof x.p === "string" ? x.p : "",
       t: typeof x.t === "string" ? x.t : "",
       d: typeof x.d === "string" ? x.d.trim() : "",
+      e: sanitizarSpecs(x.c, x.e),
       n: n
     });
   });
@@ -3359,7 +3371,8 @@ function sugBuscar(){
   if(!res.length) return sugFechar();
   sug.itens = res; sug.ativo = -1;
   el.innerHTML = res.map(function(it, i){
-    const det = [it.f, it.p, it.t].filter(Boolean).join(" · ");
+    const esp = (CAT[sug.cat] ? CAT[sug.cat].c : []).map(function(f){ return it.e && it.e[f.k]; });
+    const det = [it.f, it.p, it.t].concat(esp).filter(Boolean).join(" · ");
     return '<div class="cat-item" role="option" id="cat-op-' + i + '" data-i="' + i + '" aria-selected="false"><b>' + esc(it.m) + '</b>' + (det ? '<small>' + esc(det) + '</small>' : '') + '</div>';
   }).join("");
   el.scrollTop = 0;
@@ -3389,6 +3402,20 @@ function definirOpcao(cont, k, valor){
   return true;
 }
 
+// Preenche um campo numérico ("45 V") só se a unidade existir naquele campo
+function definirValor(cont, k, valor){
+  const m = /^(\S+) (\S+)$/.exec(String(valor || "").trim());
+  if(!m) return false;
+  const inp = cont.querySelector('input[data-k="' + k + '"][data-p="v"]');
+  const sel = cont.querySelector('select[data-k="' + k + '"][data-p="u"]');
+  if(!inp || !sel) return false;
+  const un = Array.from(sel.options).find(function(o){ return o.value === m[2]; });
+  if(!un) return false;
+  inp.value = m[1];
+  sel.value = un.value;
+  return true;
+}
+
 function sugEscolher(i){
   const it = sug.itens[i], inp = sug.input, cont = sug.cont;
   if(!it || !inp || !cont) return;
@@ -3398,6 +3425,15 @@ function sugEscolher(i){
     return definirOpcao(cont, k, it.t) || (k === "canal" && definirOpcao(cont, k, "Canal " + it.t));
   });
   definirOpcao(cont, "encap", it.p);
+  // especificações do catálogo: limpa as que o catálogo preencheu na escolha anterior e põe as novas
+  let anteriores = [];
+  try{ anteriores = JSON.parse(cont.dataset.autoSpecs || "[]"); }catch(e){}
+  anteriores.forEach(function(k){
+    const campo = cont.querySelector('input[data-k="' + k + '"][data-p="v"]');
+    if(campo) campo.value = "";
+  });
+  const preenchidos = Object.keys(it.e || {}).filter(function(k){ return definirValor(cont, k, it.e[k]); });
+  cont.dataset.autoSpecs = JSON.stringify(preenchidos);
   const velha = cont.querySelector(".cat-nota");
   if(velha) velha.remove();
   if(/^https?:\/\//i.test(it.d)){
