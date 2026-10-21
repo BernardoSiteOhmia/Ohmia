@@ -7,6 +7,14 @@ contra os datasheets: confira sempre o datasheet do fabricante antes de usar uma
 
 ## Fontes
 
+### Bibliotecas oficiais de símbolos do KiCad
+- Repositório: https://gitlab.com/kicad/libraries/kicad-symbols
+- Licença: Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0), com a exceção descrita no
+  LICENSE.md da biblioteca para projetos eletrônicos que usem os dados. Quem redistribui a biblioteca
+  ou partes dela como coleção, inclusive modificada, deve manter a mesma licença e os créditos.
+- Uso no Ohmia: nome, descrição, encapsulamento e link do datasheet de semicondutores, circuitos
+  integrados, reguladores, relés, pontes retificadoras e módulos.
+
 ### Digi-Key KiCad Library
 - Repositório: https://github.com/Digi-Key/digikey-kicad-library
 - Licença: Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0), com a exceção descrita no
@@ -23,8 +31,8 @@ contra os datasheets: confira sempre o datasheet do fabricante antes de usar uma
 ### Banco de componentes do aplicativo electroDB
 - Origem de grande parte das entradas de transistores, MOSFETs, diodos, reguladores, relés e
   circuitos integrados.
-- [A CONFIRMAR antes de publicar: licença e termos de uso do banco do electroDB e das bibliotecas
-  de símbolos em que ele parece se basear, como as do KiCad.]
+- [A CONFIRMAR antes de publicar: licença e termos de uso do banco do electroDB. As entradas dele
+  parecem coincidir com as bibliotecas do KiCad e da Digi-Key, já creditadas acima.]
 
 ## Licença dos dados do catálogo
 
