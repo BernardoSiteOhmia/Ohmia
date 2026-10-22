@@ -157,6 +157,51 @@ button.text-btn:hover{color:var(--text)}
 .specs{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
 .spec{background:transparent;border:1px solid var(--line);border-radius:3px;padding:2px 8px;font-size:12.5px;color:var(--text);line-height:1.5}
 .spec b{font-weight:500;color:var(--muted);margin-right:4px}
+#modal-peca .modal-caixa{max-width:560px}
+#modal-peca h4{margin:16px 0 6px;font-size:14px}
+.peca-links{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 2px}
+a.botao-link{display:inline-block;padding:7px 12px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);text-decoration:none;font-size:14px;font-weight:500}
+a.botao-link.sec{background:transparent;color:var(--accent)}
+.pinos-rolagem{overflow-x:auto}
+table.pinos{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:6px}
+table.pinos th,table.pinos td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+table.pinos th{color:var(--muted);font-weight:500}
+.pino-nota{font-size:12.5px;margin:4px 0 8px}
+.dip{display:flex;justify-content:center;margin:12px 0 4px}
+.dip-lado{display:flex;flex-direction:column;gap:4px}
+.dip-pino{display:flex;align-items:center;gap:6px;min-height:24px;font-size:12px}
+.dip-lado.dir .dip-pino{flex-direction:row-reverse}
+.dip-nome{max-width:90px;overflow-wrap:anywhere;line-height:1.15}
+.dip-lado:not(.dir) .dip-nome{text-align:right}
+.dip-num{min-width:22px;text-align:center;border:1px solid var(--line);border-radius:3px;font-weight:600;padding:1px 0}
+.dip-corpo{width:56px;margin:0 6px;border:2px solid var(--line);border-radius:4px;position:relative}
+.dip-corpo::before{content:"";position:absolute;top:-2px;left:50%;width:18px;height:9px;margin-left:-9px;border:2px solid var(--line);border-top:0;border-radius:0 0 9px 9px}
+.painel{margin:2px 0 14px;border:1px solid var(--line);border-radius:6px;padding:0 14px}
+.painel>summary{cursor:pointer;padding:10px 0;font-weight:500}
+.painel-cartoes{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:4px 0 6px}
+.painel-cartao{border:1px solid var(--line);border-radius:6px;padding:9px 12px}
+.painel-cartao b{display:block;font-size:22px;font-weight:600;line-height:1.15}
+.painel-cartao span{font-size:12.5px;color:var(--muted)}
+.painel h4{margin:16px 0 6px;font-size:14px}
+.barras{display:flex;flex-direction:column;gap:3px}
+button.barra{display:grid;grid-template-columns:minmax(80px,140px) 1fr auto;align-items:center;gap:8px;width:100%;padding:4px 6px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--text);text-align:left;font:inherit;font-size:13px;font-weight:400;cursor:pointer}
+button.barra:hover,button.barra.ativa{border-color:var(--line);background:var(--tag)}
+.barra-nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barra-trilho{height:10px;background:var(--tag);border-radius:5px;overflow:hidden}
+button.barra:hover .barra-trilho,button.barra.ativa .barra-trilho{background:var(--card)}
+.barra-preench{display:block;height:100%;background:var(--accent);border-radius:5px}
+.barra-num{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.top-lista{margin:0;padding:0;list-style:none}
+.top-lista li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.top-lista li span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.painel-nota{font-size:12.5px;color:var(--muted);margin:6px 0 12px}
+.pct{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.pct-barra{flex:1;max-width:220px;height:8px;background:var(--tag);border-radius:4px;overflow:hidden}
+.pct-preench{display:block;height:100%;border-radius:4px;background:var(--muted)}
+.pct-preench.ok{background:var(--ok)}
+.pct-preench.poucas{background:var(--accent)}
+.pct-preench.muitas{background:var(--warn)}
+.pct-txt{font-size:12.5px;color:var(--muted);white-space:nowrap}
 .zerado strong{opacity:.55}
 .acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .qtd{display:flex;align-items:center;gap:6px}
@@ -367,6 +412,15 @@ button.com-denunciar{color:var(--muted)}
           <option value="">Todos os projetos</option>
           <option value="seguindo">Só de quem eu sigo</option>
         </select>
+        <select id="filtro-montar" hidden aria-label="Filtrar pelo que dá para montar">
+          <option value="">Qualquer disponibilidade</option>
+          <option value="montar">Posso montar agora</option>
+          <option value="poucas">Posso montar ou faltam poucas peças</option>
+        </select>
+        <select id="ordem-projetos" hidden aria-label="Ordenar projetos">
+          <option value="">Ordem padrão</option>
+          <option value="pct">Mais perto de montar</option>
+        </select>
       </div>
       <div>
         <button type="button" id="btn-novo-projeto" class="primary" hidden>+ Novo projeto</button>
@@ -478,6 +532,10 @@ button.com-denunciar{color:var(--muted)}
           <select id="filtro-cat"></select>
         </div>
       </div>
+      <details id="painel-resumo" class="painel" hidden>
+        <summary>Resumo do inventário</summary>
+        <div id="painel-corpo"></div>
+      </details>
       <div class="csv-barra">
         <button type="button" id="csv-exportar">Exportar planilha</button>
         <button type="button" id="csv-importar">Importar planilha</button>
@@ -720,6 +778,14 @@ button.com-denunciar{color:var(--muted)}
     <h3 id="pessoas-titulo"></h3>
     <div id="pessoas-lista" class="lista-pessoas"></div>
     <div class="actions"><button type="button" id="pessoas-fechar">Fechar</button></div>
+  </div>
+</div>
+
+<div id="modal-peca" class="modal" hidden>
+  <div class="modal-caixa" role="dialog" aria-modal="true" aria-labelledby="peca-titulo">
+    <h3 id="peca-titulo"></h3>
+    <div id="peca-corpo"></div>
+    <div class="actions"><button type="button" id="peca-fechar">Fechar</button></div>
   </div>
 </div>
 
@@ -1307,6 +1373,64 @@ function lerCampos(){
 }
 
 // Mostra, ao lado de cada peça de catálogo (transistor, diodo, CI...), todas as informações preenchidas além do modelo
+// ===== Painel-resumo do inventário (totais, por categoria, mais numerosas, sem estoque) =====
+function renderPainel(){
+  const box = $("painel-resumo");
+  if(!box) return;
+  if(!currentUser || !itens.length){ box.hidden = true; return; }
+  box.hidden = false;
+  const qtd = function(i){ return parseInt(i.quantidade, 10) || 0; };
+  const total = itens.reduce(function(s, i){ return s + qtd(i); }, 0);
+  const porCat = {};
+  itens.forEach(function(i){
+    const c = i.categoria || "Outros";
+    const o = porCat[c] || (porCat[c] = { tipos: 0, un: 0 });
+    o.tipos++; o.un += qtd(i);
+  });
+  const cats = Object.keys(porCat).sort(function(a, b){ return (porCat[b].un - porCat[a].un) || a.localeCompare(b, "pt-BR"); });
+  const maximo = Math.max(1, porCat[cats[0]].un);
+  const zerados = itens.filter(function(i){ return qtd(i) === 0; }).sort(porNome);
+  const top = itens.filter(function(i){ return qtd(i) > 0; }).sort(function(a, b){ return (qtd(b) - qtd(a)) || porNome(a, b); }).slice(0, 10);
+  const filtro = $("filtro-cat").value;
+  const cartao = function(n, rot){ return '<div class="painel-cartao"><b>' + n + '</b><span>' + rot + '</span></div>'; };
+
+  let h = '<div class="painel-cartoes">' +
+    cartao(itens.length, itens.length === 1 ? "tipo de peça" : "tipos de peça") +
+    cartao(total, total === 1 ? "unidade" : "unidades") +
+    cartao(cats.length, cats.length === 1 ? "categoria" : "categorias") +
+    cartao(zerados.length, "sem estoque") + '</div>';
+
+  h += '<h4>Por categoria</h4><div class="barras">' + cats.map(function(c){
+    const o = porCat[c];
+    return '<button type="button" class="barra' + (filtro === c ? " ativa" : "") + '" data-cat="' + esc(c) + '" aria-label="Filtrar por ' + esc(c) + ': ' + o.un + ' unidades">' +
+      '<span class="barra-nome">' + esc(c) + '</span>' +
+      '<span class="barra-trilho"><span class="barra-preench" style="width:' + Math.max(2, Math.round(o.un / maximo * 100)) + '%"></span></span>' +
+      '<span class="barra-num">' + o.un + ' un · ' + o.tipos + (o.tipos === 1 ? " tipo" : " tipos") + '</span></button>';
+  }).join("") + '</div><p class="painel-nota">Toque numa categoria para filtrar a lista.</p>';
+
+  if(top.length){
+    h += '<h4>Peças com mais unidades</h4><ol class="top-lista">' + top.map(function(i){
+      return '<li><span>' + esc(titulo(i)) + '</span><span>' + qtd(i) + ' un</span></li>';
+    }).join("") + '</ol>';
+  }
+  if(zerados.length){
+    const nomes = zerados.slice(0, 8).map(function(i){ return esc(titulo(i)); }).join(", ");
+    h += '<h4>Sem estoque</h4><p class="painel-nota">' + nomes + (zerados.length > 8 ? " e mais " + (zerados.length - 8) : "") + '.</p>';
+  }
+  $("painel-corpo").innerHTML = h;
+}
+
+$("painel-corpo").addEventListener("click", function(e){
+  const b = e.target.closest("button[data-cat]");
+  if(!b) return;
+  const cat = b.dataset.cat;
+  const sel = $("filtro-cat");
+  sel.value = (sel.value === cat) ? "" : cat;      // tocar de novo na mesma categoria tira o filtro
+  pendingDel = null;
+  render();
+  $("lista").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 function especsHtml(i){
   const c = cfg(i);
   if(!c.m) return "";
@@ -1318,6 +1442,7 @@ function especsHtml(i){
 
 function renderInventario(){
   const lista=$("lista");
+  renderPainel();
   if(!currentUser){
     lista.innerHTML='<li class="vazio">Faça login para gerenciar seu inventário na nuvem.</li>'; 
     $("resumo").textContent = "";
@@ -1352,6 +1477,7 @@ function renderInventario(){
           '<span>' + i.quantidade + '</span>' +
           '<button type="button" data-act="mais" data-id="' + i.id + '" aria-label="Aumentar quantidade">+</button>' +
         '</div>' +
+        (cfg(i).m ? '<button type="button" data-act="detalhes" data-id="' + i.id + '">Detalhes</button>' : '') +
         '<button type="button" data-act="editar" data-id="' + i.id + '">Editar</button>' +
         '<button type="button" data-act="remover" data-id="' + i.id + '" class="' + (pendingDel===i.id ? "perigo" : "") + '">' + (pendingDel===i.id ? "Confirmar" : "Remover") + '</button>' +
       '</div>' +
@@ -1359,7 +1485,105 @@ function renderInventario(){
   }).join("");
 }
 
+// ===== Detalhes da peça: especificações, datasheet e pinagem (pinagem.json, carregado só quando precisa) =====
+const PINO_NOMES = {
+  "Transistores bipolares": { B: "Base", C: "Coletor", E: "Emissor" },
+  "MOSFETs": { G: "Gate", D: "Dreno", S: "Fonte" },
+  "Diodos": { A: "Ânodo", K: "Cátodo" }
+};
+const PINO_FUNCAO = { i: "Entrada", o: "Saída", b: "Entrada/saída", p: "Alimentação", n: "Não conectado" };
+let pinagemDados = null, pinagemPromessa = null, detalhesToken = 0;
+
+function carregarPinagem(){
+  if(pinagemDados) return Promise.resolve(pinagemDados);
+  if(!pinagemPromessa){
+    pinagemPromessa = fetch("pinagem.json", { cache: "no-cache" })
+      .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function(d){
+        pinagemDados = (d && Array.isArray(d.u) && d.m && typeof d.m === "object") ? d : { u: [], m: {} };
+        return pinagemDados;
+      })
+      .catch(function(){ pinagemPromessa = null; return null; });
+  }
+  return pinagemPromessa;
+}
+
+function acharNoCatalogo(cat, modelo){
+  const n = nBusca(modelo);
+  if(!n) return null;
+  const lista = catalogoPorCat[cat] || [];
+  for(let k = 0; k < lista.length; k++) if(lista[k].n === n) return lista[k];
+  return null;
+}
+
+function pinoRotulo(cat, nome){
+  const n = String(nome || "");
+  const mapa = PINO_NOMES[cat] || {};
+  const t = mapa[n.toUpperCase()];
+  return t ? t + " (" + n + ")" : n;
+}
+
+function pinagemHtml(cat, pinos, enc){
+  let h = "";
+  const n = pinos.length;
+  const sequencial = pinos.every(function(p, k){ return p[0] === String(k + 1); });
+  if(sequencial && n % 2 === 0 && n >= 4 && n <= 40 && /DIP|SOIC|SOP|SSOP|MSOP/i.test(enc || "")){
+    const lado = function(lista, dir){
+      return '<div class="dip-lado' + (dir ? " dir" : "") + '">' + lista.map(function(p){
+        return '<div class="dip-pino"><span class="dip-nome">' + esc(p[1]) + '</span><span class="dip-num">' + esc(p[0]) + '</span></div>';
+      }).join("") + '</div>';
+    };
+    h += '<div class="dip">' + lado(pinos.slice(0, n / 2), false) + '<div class="dip-corpo"></div>' + lado(pinos.slice(n / 2).reverse(), true) + '</div>' +
+         '<p class="muted pino-nota">Vista de cima, com o entalhe do encapsulamento virado para cima.</p>';
+  }
+  const comTipo = !PINO_NOMES[cat];
+  h += '<div class="pinos-rolagem"><table class="pinos"><thead><tr><th>Pino</th><th>Nome</th>' + (comTipo ? '<th>Tipo</th>' : '') + '</tr></thead><tbody>' +
+    pinos.map(function(p){
+      return '<tr><td>' + esc(p[0]) + '</td><td>' + (esc(pinoRotulo(cat, p[1])) || '<span class="muted">—</span>') + '</td>' + (comTipo ? '<td>' + esc(PINO_FUNCAO[p[2]] || "") + '</td>' : '') + '</tr>';
+    }).join("") + '</tbody></table></div>' +
+    '<p class="muted pino-nota">Pinagem conforme as bibliotecas abertas do KiCad e da Digi-Key. A ordem dos pinos pode mudar entre encapsulamentos e versões: confira no datasheet antes de ligar.</p>';
+  return h;
+}
+
+function abrirDetalhes(id){
+  const i = itens.find(function(x){ return x.id === id; });
+  if(!i) return;
+  const token = ++detalhesToken;
+  const modelo = (i.campos && i.campos.modelo) || "";
+  const ent = acharNoCatalogo(i.categoria, modelo);
+  const enc = (i.campos && i.campos.encap) || (ent && ent.p) || "";
+  const ds = ent && /^https?:\/\//i.test(ent.d || "") ? ent.d : "";
+  const busca = "https://www.google.com/search?q=" + encodeURIComponent((modelo || titulo(i)) + " datasheet");
+  $("peca-titulo").textContent = titulo(i);
+  $("peca-corpo").innerHTML =
+    '<div class="meta"><span class="tag">' + esc(i.categoria) + '</span>' + (ent && ent.f ? ' <span class="muted">' + esc(ent.f) + '</span>' : '') + '</div>' +
+    especsHtml(i) +
+    '<div class="peca-links">' +
+      (ds ? '<a class="botao-link" href="' + esc(ds) + '" target="_blank" rel="noopener noreferrer">Abrir datasheet</a>' : '') +
+      '<a class="botao-link' + (ds ? ' sec' : '') + '" href="' + esc(busca) + '" target="_blank" rel="noopener noreferrer">' + (ds ? "Procurar outro datasheet" : "Procurar datasheet") + '</a>' +
+    '</div>' +
+    '<h4>Pinagem</h4><div id="peca-pinagem" class="muted">Carregando pinagem…</div>';
+  $("modal-peca").hidden = false;
+  carregarPinagem().then(function(dados){
+    if(token !== detalhesToken || $("modal-peca").hidden) return;
+    const alvo = $("peca-pinagem");
+    if(!alvo) return;
+    if(!dados){ alvo.textContent = "Não foi possível carregar a pinagem agora. Tente de novo em instantes."; return; }
+    const idx = dados.m[nBusca(modelo)];
+    const pinos = idx === undefined ? null : dados.u[idx];
+    if(!Array.isArray(pinos) || !pinos.length){ alvo.textContent = "Não há pinagem cadastrada para esta peça. Confira no datasheet."; return; }
+    alvo.className = "";
+    alvo.innerHTML = pinagemHtml(i.categoria, pinos, enc);
+  });
+}
+
+function fecharDetalhes(){ $("modal-peca").hidden = true; detalhesToken++; }
+$("peca-fechar").addEventListener("click", fecharDetalhes);
+$("modal-peca").addEventListener("click", function(e){ if(e.target === this) fecharDetalhes(); });
+document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !$("modal-peca").hidden) fecharDetalhes(); });
+
 function acao(a,id){
+  if(a==="detalhes"){ abrirDetalhes(id); return; }
   if(!canSave)return;
   const i=itens.find(function(x){ return x.id===id; });
   if(!i)return;
@@ -1810,14 +2034,23 @@ function avaliarProjeto(p, comAssociacao){
 
   const falta = resultados.reduce(function(acc, r){ return acc + (r.tipo === "falta" ? r.faltam : 0); }, 0);
 
-  if(falta === 0) return { pecas: resultados, nivel: "ok", titulo: "Você pode montar agora" };
-  if(falta <= LIMITE_POUCAS) return { pecas: resultados, nivel: "poucas", titulo: falta === 1 ? "Falta 1 peça para montar" : "Faltam " + falta + " peças para montar" };
-  return { pecas: resultados, nivel: "muitas", titulo: "Exige muitas peças adicionais (" + falta + " peças faltando)" };
+  // Porcentagem das unidades necessárias que já estão no inventário (arredonda para baixo: 100% só quando dá para montar)
+  const somaQtd = resultados.reduce(function(s, r){ return s + r.qtd; }, 0);
+  const somaTenho = resultados.reduce(function(s, r){ return s + r.tenho; }, 0);
+  const pct = somaQtd ? Math.floor(100 * somaTenho / somaQtd) : 100;
+
+  if(falta === 0) return { pecas: resultados, nivel: "ok", titulo: "Você pode montar agora", pct: 100, falta: 0 };
+  if(falta <= LIMITE_POUCAS) return { pecas: resultados, nivel: "poucas", titulo: falta === 1 ? "Falta 1 peça para montar" : "Faltam " + falta + " peças para montar", pct: pct, falta: falta };
+  return { pecas: resultados, nivel: "muitas", titulo: "Exige muitas peças adicionais (" + falta + " peças faltando)", pct: pct, falta: falta };
 }
 
 function statusHtml(av){
   if(!av) return "";
-  return '<p class="resumo-status ' + av.nivel + '">' + esc(av.titulo) + '</p>';
+  const pct = typeof av.pct === "number" ? av.pct : null;
+  return '<p class="resumo-status ' + av.nivel + '">' + esc(av.titulo) + '</p>' +
+    (pct === null ? "" : '<div class="pct" title="' + pct + '% das unidades necessárias já estão no seu inventário">' +
+      '<div class="pct-barra"><span class="pct-preench ' + av.nivel + '" style="width:' + pct + '%"></span></div>' +
+      '<span class="pct-txt">' + pct + '% das peças</span></div>');
 }
 
 function textoPeca(peca){
@@ -1923,8 +2156,27 @@ function fotosCardHtml(p){
   }).join("") + '</div>';
 }
 
+let avaliacaoAtual = null;   // avaliações calculadas uma vez por renderProjetos (zerado ao terminar)
+
+// Aplica o filtro de disponibilidade e a ordenação "mais perto de montar" com as avaliações já calculadas
+function aplicarDisponibilidade(lista, avs, filtro, ordem){
+  let r = lista.filter(function(p){
+    const av = avs.get(p.id);
+    if(filtro === "montar") return !!av && av.nivel === "ok";
+    if(filtro === "poucas") return !!av && (av.nivel === "ok" || av.nivel === "poucas");
+    return true;
+  });
+  if(ordem === "pct"){
+    r = r.map(function(p, k){ return { p: p, k: k }; }).sort(function(a, b){
+      const x = avs.get(a.p.id), y = avs.get(b.p.id);
+      return ((y ? y.pct : -1) - (x ? x.pct : -1)) || ((x ? x.falta : 0) - (y ? y.falta : 0)) || (a.k - b.k);
+    }).map(function(o){ return o.p; });
+  }
+  return r;
+}
+
 function cardProjetoHtml(p){
-  const av = avaliarProjeto(p);
+  const av = (avaliacaoAtual && avaliacaoAtual.has(p.id)) ? avaliacaoAtual.get(p.id) : avaliarProjeto(p);
   return '<section class="card projeto-card">' +
     '<div class="card-esq">' + autorHtml(p) +
     '<h3><button type="button" class="titulo-link" data-abrir="' + esc(p.id) + '">' + esc(p.titulo) + '</button></h3>' +
@@ -2009,8 +2261,13 @@ function renderProjetos(){
   const cat = $("filtro-tipo-projeto").value;
   $("filtro-feed").hidden = !currentUser;
   const feed = currentUser ? $("filtro-feed").value : "";
+  const comparando = !!(currentUser && compararInventario);
+  $("filtro-montar").hidden = !comparando;
+  $("ordem-projetos").hidden = !comparando;
+  const montar = comparando ? $("filtro-montar").value : "";
+  const ordem = comparando ? $("ordem-projetos").value : "";
 
-  const filtrados = todosProjetos().filter(function(p){
+  let filtrados = todosProjetos().filter(function(p){
     const texto = [p.titulo, p.descricao].join(" ").toLowerCase();
     const passouCat = !cat || p.tipo === cat;
     const passouTermo = !termo || texto.indexOf(termo) !== -1;
@@ -2018,13 +2275,23 @@ function renderProjetos(){
     return passouCat && passouTermo && passouFeed;
   });
 
+  avaliacaoAtual = new Map();
+  if(comparando) filtrados.forEach(function(p){ avaliacaoAtual.set(p.id, avaliarProjeto(p)); });
+  filtrados = aplicarDisponibilidade(filtrados, avaliacaoAtual, montar, ordem);
+
   if(!filtrados.length) {
-    $("lista-projetos").innerHTML = '<p class="vazio" style="grid-column: 1/-1;">' +
-      (feed === "seguindo" ? 'Nenhum projeto de quem você segue (ainda). Visite perfis e clique em Seguir!' : (!todosProjetos().length ? 'Ainda não há projetos publicados. Seja a primeira pessoa a publicar!' : 'Nenhum projeto encontrado com estes filtros.')) + '</p>';
+    let texto;
+    if(montar === "montar") texto = itens.length ? 'Nenhum projeto pode ser montado agora com o seu inventário. Tente "Posso montar ou faltam poucas peças" ou cadastre mais peças.' : 'Seu inventário está vazio. Cadastre as peças que você tem para ver o que dá para montar.';
+    else if(montar === "poucas") texto = 'Nenhum projeto está perto de ser montado com o seu inventário atual.';
+    else if(feed === "seguindo") texto = 'Nenhum projeto de quem você segue (ainda). Visite perfis e clique em Seguir!';
+    else texto = !todosProjetos().length ? 'Ainda não há projetos publicados. Seja a primeira pessoa a publicar!' : 'Nenhum projeto encontrado com estes filtros.';
+    $("lista-projetos").innerHTML = '<p class="vazio" style="grid-column: 1/-1;">' + texto + '</p>';
+    avaliacaoAtual = null;
     return;
   }
 
-  $("lista-projetos").innerHTML = filtrados.map(cardProjetoHtml).join("");
+  $("lista-projetos").innerHTML = filtrados.map(function(p){ return cardProjetoHtml(p); }).join("");
+  avaliacaoAtual = null;
 }
 
 function renderDetalhe(p){
@@ -3187,13 +3454,18 @@ function nBusca(s){
   return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-// Aceita só campos numéricos que existem na categoria, no formato "45 V" / "100 mA"
+// Aceita só o que cabe em cada campo da categoria: número com unidade ("45 V"), uma das opções da lista ou um texto curto
 function sanitizarSpecs(cat, e){
   const out = {};
   if(!e || typeof e !== "object") return out;
   (CAT[cat] ? CAT[cat].c : []).forEach(function(f){
     const v = e[f.k];
-    if(f.t === "valor" && typeof v === "string" && v.length <= 24 && /^\d+(\.\d+)? \S+$/.test(v.trim())) out[f.k] = v.trim();
+    if(typeof v !== "string" || f.k === "modelo") return;
+    const t = v.trim();
+    if(!t || t.length > 40) return;
+    if(f.t === "valor" && /^\d+(\.\d+)? \S+$/.test(t)) out[f.k] = t;
+    else if(f.t === "opcoes" && (f.o || []).indexOf(t) > -1) out[f.k] = t;
+    else if(f.t === "texto") out[f.k] = t;
   });
   return out;
 }
@@ -3270,7 +3542,7 @@ async function carregarCatalogo(){
   }
 }
 
-function porTamanho(a, b){ return a.n.length - b.n.length; }
+function porTamanho(a, b){ return (a.n.length - b.n.length) || (a.n < b.n ? -1 : (a.n > b.n ? 1 : 0)); }
 
 // Acha o trecho em qualquer posição; quem começa com o termo vem primeiro
 function buscarCatalogo(cat, termo){
@@ -3282,8 +3554,8 @@ function buscarCatalogo(cat, termo){
     const it = lista[i];
     const pos = it.n.indexOf(q);
     if(pos < 0) continue;
-    if(pos === 0){ ini.push(it); if(ini.length >= CATALOGO_MAX) break; }
-    else if(cont.length < CATALOGO_MAX) cont.push(it);
+    if(pos === 0) ini.push(it);
+    else if(cont.length < 400) cont.push(it);
   }
   ini.sort(porTamanho); cont.sort(porTamanho);
   return ini.concat(cont).slice(0, CATALOGO_MAX);
@@ -3416,6 +3688,16 @@ function definirValor(cont, k, valor){
   return true;
 }
 
+// Aplica um valor do catálogo no campo certo: lista de opções, número com unidade ou texto
+function aplicarEspec(cont, k, valor){
+  const campo = cont.querySelector('[data-k="' + k + '"][data-p="v"]');
+  if(!campo) return false;
+  if(campo.tagName === "SELECT") return definirOpcao(cont, k, valor);
+  if(cont.querySelector('select[data-k="' + k + '"][data-p="u"]')) return definirValor(cont, k, valor);
+  campo.value = valor;
+  return true;
+}
+
 function sugEscolher(i){
   const it = sug.itens[i], inp = sug.input, cont = sug.cont;
   if(!it || !inp || !cont) return;
@@ -3429,10 +3711,11 @@ function sugEscolher(i){
   let anteriores = [];
   try{ anteriores = JSON.parse(cont.dataset.autoSpecs || "[]"); }catch(e){}
   anteriores.forEach(function(k){
-    const campo = cont.querySelector('input[data-k="' + k + '"][data-p="v"]');
-    if(campo) campo.value = "";
+    const campo = cont.querySelector('[data-k="' + k + '"][data-p="v"]');
+    if(!campo) return;
+    if(campo.tagName === "SELECT") campo.selectedIndex = 0; else campo.value = "";
   });
-  const preenchidos = Object.keys(it.e || {}).filter(function(k){ return definirValor(cont, k, it.e[k]); });
+  const preenchidos = Object.keys(it.e || {}).filter(function(k){ return aplicarEspec(cont, k, it.e[k]); });
   cont.dataset.autoSpecs = JSON.stringify(preenchidos);
   const velha = cont.querySelector(".cat-nota");
   if(velha) velha.remove();
@@ -3557,6 +3840,8 @@ $("nav-salvos").addEventListener("click", function(){
   showView("view-salvos");
 });
 $("filtro-feed").addEventListener("change", renderProjetos);
+$("filtro-montar").addEventListener("change", renderProjetos);
+$("ordem-projetos").addEventListener("change", renderProjetos);
 $("btn-seguir").addEventListener("click", function(){ if(perfilAbertoUid) alternarSeguir(perfilAbertoUid); });
 
 // Moderação: lista de moderadores (leitura pública; escrita só pelo console do Firebase)
