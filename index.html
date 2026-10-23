@@ -202,6 +202,36 @@ button.barra:hover .barra-trilho,button.barra.ativa .barra-trilho{background:var
 .pct-preench.poucas{background:var(--accent)}
 .pct-preench.muitas{background:var(--warn)}
 .pct-txt{font-size:12.5px;color:var(--muted);white-space:nowrap}
+#det-montei{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 14px}
+.montei-lista{list-style:none;margin:10px 0;padding:0}
+.montei-lista li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.montei-lista li span:last-child{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.montei-nota{font-size:13px;color:var(--muted);margin:8px 0}
+.selo-verif{display:inline-block;padding:2px 8px;border:1px solid var(--ok);color:var(--ok);border-radius:3px;font-size:12.5px;font-weight:500;white-space:nowrap}
+#det-verificar{margin:6px 0 12px}
+.filtros .chave{margin:0;align-self:center}
+.nav-btn.tem-novo .lbl{color:var(--accent);font-weight:700}
+.notif-lista{list-style:none;margin:8px 0;padding:0;max-height:55vh;overflow:auto}
+button.notif-item{display:block;width:100%;text-align:left;padding:10px 10px 10px 12px;margin:0;border:0;border-bottom:1px solid var(--line);border-left:3px solid transparent;border-radius:0;background:transparent;color:var(--text);font:inherit;font-size:14px;font-weight:400;cursor:pointer}
+button.notif-item:hover{background:var(--tag)}
+button.notif-item.notif-novo{border-left-color:var(--accent);background:var(--tag)}
+.notif-quando{display:block;margin-top:2px;font-size:12px;color:var(--muted)}
+button.mencao{background:transparent;border:none;padding:0;min-height:auto;font:inherit;font-weight:600;color:var(--accent);cursor:pointer}
+button.mencao:hover{text-decoration:underline}
+button.com-responder{background:transparent;border:none;color:var(--accent);padding:0;min-height:auto;font-size:12px;text-decoration:underline}
+.respostas{margin-top:10px;padding-left:12px;border-left:2px solid var(--line)}
+.respostas .comentario{margin-bottom:10px}
+.conq-titulo{margin:16px 0 8px;font-size:15px}
+.conquistas{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:14px}
+.conquista{border:1px solid var(--line);border-radius:6px;padding:9px 11px;font-size:13px;display:flex;flex-direction:column;gap:2px}
+.conquista b{font-size:14px;font-weight:600}
+.conquista span{color:var(--muted)}
+.conquista small{margin-top:4px;color:var(--muted);font-variant-numeric:tabular-nums}
+.conquista.ok{border-color:var(--ok)}
+.conquista.ok small{color:var(--ok);font-weight:600}
+.conquista.bloq{opacity:.6}
+.com-resposta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;padding:6px 10px;margin-bottom:6px;border-left:3px solid var(--accent);background:var(--tag)}
+.verif-acoes{margin-top:8px}
 .zerado strong{opacity:.55}
 .acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .qtd{display:flex;align-items:center;gap:6px}
@@ -384,6 +414,7 @@ button.com-denunciar{color:var(--muted)}
       <button id="nav-inventario" class="nav-btn"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/></svg><span class="lbl">Meu inventário</span></button>
       <button id="nav-usuarios" class="nav-btn" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-5.5 6.5-5.5s6.5 1.9 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2.2.6 3.5 2.3 3.5 5.2"/></svg><span class="lbl">Usuários</span></button>
       <button id="nav-salvos" class="nav-btn" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span class="lbl">Salvos</span></button>
+      <button id="nav-notif" class="nav-btn" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="lbl">Avisos</span></button>
       <button id="nav-denuncias" class="nav-btn" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span class="lbl">Denúncias</span></button>
     </nav>
   </header>
@@ -412,6 +443,7 @@ button.com-denunciar{color:var(--muted)}
           <option value="">Todos os projetos</option>
           <option value="seguindo">Só de quem eu sigo</option>
         </select>
+        <label class="chave"><input type="checkbox" id="so-verificados"> Só com lista verificada</label>
         <select id="filtro-montar" hidden aria-label="Filtrar pelo que dá para montar">
           <option value="">Qualquer disponibilidade</option>
           <option value="montar">Posso montar agora</option>
@@ -635,6 +667,8 @@ button.com-denunciar{color:var(--muted)}
       <p id="perfil-visto" class="muted" style="margin:0 0 8px" hidden></p>
       <p id="perfil-desc" class="perfil-desc"></p>
       <p id="perfil-contagem" class="muted"></p>
+      <h3 id="perfil-conq-titulo" class="conq-titulo">Conquistas</h3>
+      <div id="perfil-conquistas" class="conquistas"></div>
       <div class="perfil-social">
         <p id="perfil-seguidores" class="muted"><button type="button" class="text-btn" id="btn-ver-seguidores">0 seguidores</button> · <button type="button" class="text-btn" id="btn-ver-seguindo">0 seguindo</button></p>
         <button type="button" id="btn-seguir" hidden>Seguir</button>
@@ -687,6 +721,7 @@ button.com-denunciar{color:var(--muted)}
         </div>
       </div>
       <p id="det-origem" class="muted"></p>
+      <div id="det-verificar" hidden></div>
       <div id="det-curtir"></div>
       <p><button type="button" id="det-denunciar" class="text-btn" hidden>Denunciar este projeto</button></p>
       <p id="det-descricao"></p>
@@ -694,6 +729,7 @@ button.com-denunciar{color:var(--muted)}
       <div id="det-fotos" class="det-fotos" hidden></div>
       <label class="chave comparar-wrap" hidden><input type="checkbox" class="chk-comparar"> Comparar com o meu inventário</label>
       <div id="det-status"></div>
+      <div id="det-montei" hidden></div>
       <div class="projeto-pecas">
         <strong>Peças necessárias:</strong>
         <div id="det-pecas"></div>
@@ -708,7 +744,11 @@ button.com-denunciar{color:var(--muted)}
         <h3 id="com-titulo">Comentários</h3>
         <div id="com-lista"></div>
         <form id="form-comentario" hidden>
-          <textarea id="com-texto" maxlength="500" rows="3" placeholder="Escreva um comentário…"></textarea>
+          <div id="com-resposta" class="com-resposta" hidden>
+            <span>Respondendo a <b id="com-resposta-nome"></b></span>
+            <button type="button" id="com-cancelar-resp" class="autor-link">Cancelar</button>
+          </div>
+          <textarea id="com-texto" maxlength="500" rows="3" placeholder="Escreva um comentário… (use @usuario para mencionar alguém)"></textarea>
           <div class="com-rodape">
             <span id="com-contador" class="muted" style="font-size:13px">0/500</span>
             <button type="submit" class="primary" id="btn-comentar">Comentar</button>
@@ -778,6 +818,25 @@ button.com-denunciar{color:var(--muted)}
     <h3 id="pessoas-titulo"></h3>
     <div id="pessoas-lista" class="lista-pessoas"></div>
     <div class="actions"><button type="button" id="pessoas-fechar">Fechar</button></div>
+  </div>
+</div>
+
+<div id="modal-notif" class="modal" hidden>
+  <div class="modal-caixa" role="dialog" aria-modal="true" aria-labelledby="notif-titulo">
+    <h3 id="notif-titulo">Avisos</h3>
+    <div id="notif-corpo"></div>
+    <div class="actions"><button type="button" id="notif-fechar">Fechar</button></div>
+  </div>
+</div>
+
+<div id="modal-montei" class="modal" hidden>
+  <div class="modal-caixa" role="dialog" aria-modal="true" aria-labelledby="montei-titulo">
+    <h3 id="montei-titulo">Montei este projeto</h3>
+    <div id="montei-corpo"></div>
+    <div class="actions">
+      <button type="button" id="montei-cancelar">Cancelar</button>
+      <button type="button" class="primary" id="montei-confirmar">Descontar do inventário</button>
+    </div>
   </div>
 </div>
 
@@ -1011,6 +1070,8 @@ let perfilAbertoUid = null;
 let editandoPerfil = false;
 let itens = [];
 let editId = null, pendingDel = null, canSave = false;
+let curtidasEventos = [], segEventos = [];   // curtidas e follows com data, para os avisos
+let carregouPublico = { proj: false, curt: false, com: false, seg: false };   // primeira leitura de cada coleção (conquistas só são avaliadas depois disso)
 let unsubscribeFirestore = null;
 let presencaPorUid = {};        // uid -> milissegundos do último acesso
 let unsubPresenca = null, timerDesligaPres = null, timerBatimento = null, ultimaMarcacao = 0;
@@ -2014,13 +2075,15 @@ function avaliarProjeto(p, comAssociacao){
     const disp = cands.reduce(function(s, i){ return s + restante[i.id]; }, 0);
     const tenho = Math.min(qtd, disp);
     let a = tenho;
+    const usos = [];   // de quais itens do inventário sai cada peça (usado pelo "Montei este projeto")
     for(const i of cands){
       if(a <= 0) break;
       const usar = Math.min(restante[i.id], a);
       restante[i.id] -= usar;
       a -= usar;
+      if(usar > 0) usos.push({ id: i.id, n: usar });
     }
-    resultados[idx] = { tipo: tenho >= qtd ? "ok" : "falta", qtd: qtd, tenho: tenho, faltam: qtd - tenho };
+    resultados[idx] = { tipo: tenho >= qtd ? "ok" : "falta", qtd: qtd, tenho: tenho, faltam: qtd - tenho, usos: usos };
   });
 
   // Peças que faltam: procura associações série/paralelo (resistores e capacitores) com o que sobrou
@@ -2181,6 +2244,7 @@ function cardProjetoHtml(p){
     '<div class="card-esq">' + autorHtml(p) +
     '<h3><button type="button" class="titulo-link" data-abrir="' + esc(p.id) + '">' + esc(p.titulo) + '</button></h3>' +
     (p.exemplo ? '<div><span class="tag">Exemplo do Ohmia</span></div>' : '') +
+    (projetoVerificado(p) ? '<div>' + seloVerificadoHtml() + '</div>' : '') +
     statusHtml(av) +
     '<p>' + esc(p.descricao) + '</p>' + fotosCardHtml(p) + '</div>' +
     '<div class="projeto-pecas"><strong>Peças necessárias:</strong>' + pecasHtml(p, av) + '</div>' +
@@ -2226,25 +2290,92 @@ function podeApagarComentario(c){
   return !!(p && ehDono(p));
 }
 
+// @usuario no texto vira link para o perfil (só quando o username existe)
+function mapaUsernames(){
+  const m = {};
+  Object.keys(perfisPorUid).forEach(function(uid){
+    const pf = perfisPorUid[uid];
+    if(pf && pf.username) m[pf.username.toLowerCase()] = uid;
+  });
+  return m;
+}
+
+function textoComMencoes(texto, mapa){
+  return esc(texto).replace(/(^|[^A-Za-z0-9_@])@([A-Za-z0-9_]{3,20})(?![A-Za-z0-9_])/g, function(m, pre, nome){
+    const uid = mapa[nome.toLowerCase()];
+    return uid ? pre + '<button type="button" class="mencao" data-perfil="' + esc(uid) + '">@' + esc(nome) + '</button>' : m;
+  });
+}
+
+// Respostas ficam embaixo do comentário-raiz (um nível só); resposta cujo original foi apagado volta a ser comentário normal
+function agruparRespostas(lista){
+  const porId = {};
+  lista.forEach(function(c){ porId[c.id] = c; });
+  const filhos = {}, raizes = [];
+  lista.forEach(function(c){
+    const pai = c.respostaA && c.respostaA !== c.id ? porId[c.respostaA] : null;
+    if(pai && !pai.respostaA) (filhos[pai.id] = filhos[pai.id] || []).push(c);
+    else raizes.push(c);
+  });
+  return { raizes: raizes, filhos: filhos };
+}
+
+let respondendoA = null;   // { id (comentário-raiz), projetoId, nome }
+
+function atualizarBannerResposta(){
+  const ok = !!(respondendoA && respondendoA.projetoId === projetoAbertoId && comentarios.some(function(c){ return c.id === respondendoA.id; }));
+  if(!ok) respondendoA = null;
+  $("com-resposta").hidden = !ok;
+  if(ok) $("com-resposta-nome").textContent = respondendoA.nome ? "@" + respondendoA.nome : "um comentário";
+}
+
+function iniciarResposta(id){
+  if(!currentUser || !projetoAbertoId) return;
+  const c = comentarios.find(function(x){ return x.id === id && x.projetoId === projetoAbertoId; });
+  if(!c) return;
+  const nome = nomeAutor(c.uid);
+  const raiz = c.respostaA && comentarios.some(function(x){ return x.id === c.respostaA; }) ? c.respostaA : c.id;
+  respondendoA = { id: raiz, projetoId: projetoAbertoId, nome: nome };
+  atualizarBannerResposta();
+  const ta = $("com-texto");
+  const prefixo = (nome && c.uid !== currentUser.uid) ? "@" + nome + " " : "";
+  if(prefixo && ta.value.indexOf(prefixo) !== 0) ta.value = prefixo + ta.value;
+  $("com-contador").textContent = ta.value.length + "/500";
+  ta.focus();
+  $("form-comentario").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function cancelarResposta(){ respondendoA = null; atualizarBannerResposta(); }
+
+function comentarioHtml(c, mapa, filhosHtml){
+  const nome = nomeAutor(c.uid);
+  return '<div class="comentario">' +
+    '<span class="avatar" aria-hidden="true">' + avatarInner(c.uid) + '</span>' +
+    '<div class="corpo">' +
+      '<div class="cab"><button type="button" class="autor-link" data-perfil="' + esc(c.uid) + '">' + esc(nome ? "@" + nome : "Usuário") + '</button>' + (uidEhMod(c.uid) ? SELO_MOD : '') +
+      '<span class="quando">' + esc(formatarQuando(c.criadoEm)) + '</span>' +
+      (currentUser ? '<button type="button" class="com-responder" data-responder="' + esc(c.id) + '">Responder</button>' : '') +
+      (podeApagarComentario(c) ? '<button type="button" class="com-excluir" data-excluir-com="' + esc(c.id) + '">Excluir</button>' : '') +
+      (currentUser && c.uid !== currentUser.uid ? '<button type="button" class="com-excluir com-denunciar" data-denunciar-com="' + esc(c.id) + '">Denunciar</button>' : '') +
+      '</div>' +
+      '<p>' + textoComMencoes(c.texto, mapa) + '</p>' +
+      (filhosHtml ? '<div class="respostas">' + filhosHtml + '</div>' : '') +
+    '</div></div>';
+}
+
 function renderComentarios(){
   if(!projetoAbertoId) return;
   const lista = comentarios.filter(function(c){ return c.projetoId === projetoAbertoId; });
   $("com-titulo").textContent = "Comentários (" + lista.length + ")";
-  $("com-lista").innerHTML = lista.length ? lista.map(function(c){
-    const nome = nomeAutor(c.uid);
-    return '<div class="comentario">' +
-      '<span class="avatar" aria-hidden="true">' + avatarInner(c.uid) + '</span>' +
-      '<div class="corpo">' +
-        '<div class="cab"><button type="button" class="autor-link" data-perfil="' + esc(c.uid) + '">' + esc(nome ? "@" + nome : "Usuário") + '</button>' + (uidEhMod(c.uid) ? SELO_MOD : '') +
-        '<span class="quando">' + esc(formatarQuando(c.criadoEm)) + '</span>' +
-        (podeApagarComentario(c) ? '<button type="button" class="com-excluir" data-excluir-com="' + esc(c.id) + '">Excluir</button>' : '') +
-        (currentUser && c.uid !== currentUser.uid ? '<button type="button" class="com-excluir com-denunciar" data-denunciar-com="' + esc(c.id) + '">Denunciar</button>' : '') +
-        '</div>' +
-        '<p>' + esc(c.texto) + '</p>' +
-      '</div></div>';
+  const mapa = mapaUsernames();
+  const g = agruparRespostas(lista);
+  $("com-lista").innerHTML = lista.length ? g.raizes.map(function(c){
+    const filhos = (g.filhos[c.id] || []).map(function(r){ return comentarioHtml(r, mapa, ""); }).join("");
+    return comentarioHtml(c, mapa, filhos);
   }).join("") : '<p class="muted">Ainda não há comentários. Seja o primeiro!</p>';
   $("form-comentario").hidden = !currentUser;
   $("com-login").hidden = !!currentUser;
+  atualizarBannerResposta();
 }
 
 function renderSalvos(){
@@ -2264,6 +2395,7 @@ function renderProjetos(){
   const comparando = !!(currentUser && compararInventario);
   $("filtro-montar").hidden = !comparando;
   $("ordem-projetos").hidden = !comparando;
+  const soVerif = $("so-verificados").checked;
   const montar = comparando ? $("filtro-montar").value : "";
   const ordem = comparando ? $("ordem-projetos").value : "";
 
@@ -2272,7 +2404,8 @@ function renderProjetos(){
     const passouCat = !cat || p.tipo === cat;
     const passouTermo = !termo || texto.indexOf(termo) !== -1;
     const passouFeed = feed !== "seguindo" || (!p.exemplo && jaSegue(p.uid));
-    return passouCat && passouTermo && passouFeed;
+    const passouVerif = !soVerif || projetoVerificado(p);
+    return passouCat && passouTermo && passouFeed && passouVerif;
   });
 
   avaliacaoAtual = new Map();
@@ -2283,6 +2416,7 @@ function renderProjetos(){
     let texto;
     if(montar === "montar") texto = itens.length ? 'Nenhum projeto pode ser montado agora com o seu inventário. Tente "Posso montar ou faltam poucas peças" ou cadastre mais peças.' : 'Seu inventário está vazio. Cadastre as peças que você tem para ver o que dá para montar.';
     else if(montar === "poucas") texto = 'Nenhum projeto está perto de ser montado com o seu inventário atual.';
+    else if(soVerif) texto = 'Nenhum projeto com lista verificada com estes filtros.';
     else if(feed === "seguindo") texto = 'Nenhum projeto de quem você segue (ainda). Visite perfis e clique em Seguir!';
     else texto = !todosProjetos().length ? 'Ainda não há projetos publicados. Seja a primeira pessoa a publicar!' : 'Nenhum projeto encontrado com estes filtros.';
     $("lista-projetos").innerHTML = '<p class="vazio" style="grid-column: 1/-1;">' + texto + '</p>';
@@ -2294,12 +2428,205 @@ function renderProjetos(){
   avaliacaoAtual = null;
 }
 
+// ===== "Montei este projeto": desconta do inventário as peças usadas (com desfazer) =====
+let ultimoDesconto = null;   // { projetoId, itens: [{ id, n }] } — fica só na memória: some ao recarregar a página
+let planoMontei = null;
+
+// Soma, por item do inventário, quantas unidades o projeto usa (a mesma conta do "Posso montar?")
+function somarUsos(av){
+  const soma = {};
+  ((av && av.pecas) || []).forEach(function(r){
+    (r.usos || []).forEach(function(u){ soma[u.id] = (soma[u.id] || 0) + u.n; });
+  });
+  return soma;
+}
+
+// Tira as unidades dos itens (nunca abaixo de zero) e devolve o que realmente foi descontado
+function aplicarDescontoEm(lista, plano){
+  const feito = [];
+  plano.forEach(function(o){
+    const it = lista.find(function(x){ return x.id === o.id; });
+    if(!it) return;
+    const q = parseInt(it.quantidade, 10) || 0;
+    const n = Math.min(o.n, q);
+    if(n <= 0) return;
+    it.quantidade = q - n;
+    feito.push({ id: o.id, n: n });
+  });
+  return feito;
+}
+
+// Devolve as unidades descontadas (soma de volta, sem apagar mudanças feitas depois)
+function desfazerDescontoEm(lista, feito){
+  feito.forEach(function(o){
+    const it = lista.find(function(x){ return x.id === o.id; });
+    if(it) it.quantidade = (parseInt(it.quantidade, 10) || 0) + o.n;
+  });
+}
+
+function renderMontei(p, av){
+  const box = $("det-montei");
+  if(!box) return;
+  const soma = somarUsos(av);
+  const podeDescontar = canSave && Object.keys(soma).length > 0;
+  const desfazer = ultimoDesconto && ultimoDesconto.projetoId === p.id;
+  let h = "";
+  if(podeDescontar) h += '<button type="button" class="primary" id="btn-montei">Montei este projeto</button>';
+  if(desfazer) h += '<span class="muted">Peças descontadas do inventário.</span> <button type="button" id="btn-desfazer-montei">Desfazer</button>';
+  box.innerHTML = h;
+  box.hidden = !h;
+}
+
+function abrirMontei(){
+  const p = projetoAbertoId ? buscarProjeto(projetoAbertoId) : null;
+  if(!p || !canSave) return;
+  const av = avaliarProjeto(p, false);
+  const soma = somarUsos(av);
+  const lista = Object.keys(soma).map(function(id){
+    const it = itens.find(function(x){ return x.id === id; });
+    return it ? { id: id, n: soma[id], atual: parseInt(it.quantidade, 10) || 0, item: it } : null;
+  }).filter(Boolean).sort(function(a, b){ return porNome(a.item, b.item); });
+  if(!lista.length) return;
+  planoMontei = { projetoId: p.id, lista: lista.map(function(o){ return { id: o.id, n: o.n }; }) };
+  const faltam = av.pecas.reduce(function(s, r){ return s + (r.tipo === "falta" ? r.faltam : 0); }, 0);
+  $("montei-corpo").innerHTML =
+    '<p>Estas peças do seu inventário serão descontadas:</p>' +
+    '<ul class="montei-lista">' + lista.map(function(o){
+      return '<li><span>' + esc(titulo(o.item)) + '</span><span>−' + o.n + ' un (ficam ' + (o.atual - o.n) + ')</span></li>';
+    }).join("") + '</ul>' +
+    (faltam ? '<p class="montei-nota">Faltam ' + faltam + (faltam === 1 ? " peça" : " peças") + ' no seu inventário para este projeto. Elas não serão descontadas.</p>' : '') +
+    '<p class="montei-nota">Você pode desfazer logo depois, na tela do projeto.</p>';
+  $("modal-montei").hidden = false;
+}
+
+function fecharMontei(){ $("modal-montei").hidden = true; planoMontei = null; }
+
+function confirmarMontei(){
+  if(!planoMontei || !canSave) return;
+  const feito = aplicarDescontoEm(itens, planoMontei.lista);
+  ultimoDesconto = feito.length ? { projetoId: planoMontei.projetoId, itens: feito } : null;
+  fecharMontei();
+  if(!feito.length) return;
+  pendingDel = null;
+  render();
+  persist();
+}
+
+function desfazerMontei(){
+  if(!ultimoDesconto || !canSave) return;
+  desfazerDescontoEm(itens, ultimoDesconto.itens);
+  ultimoDesconto = null;
+  pendingDel = null;
+  render();
+  persist();
+}
+
+$("det-montei").addEventListener("click", function(e){
+  const b = e.target.closest("button");
+  if(!b) return;
+  if(b.id === "btn-montei") abrirMontei();
+  else if(b.id === "btn-desfazer-montei") desfazerMontei();
+});
+$("montei-cancelar").addEventListener("click", fecharMontei);
+$("montei-confirmar").addEventListener("click", confirmarMontei);
+$("modal-montei").addEventListener("click", function(e){ if(e.target === this) fecharMontei(); });
+document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !$("modal-montei").hidden) fecharMontei(); });
+
+// ===== Selo "lista verificada" (dado por moderadores; some sozinho se a lista de peças mudar) =====
+// Hash curto (cyrb53) para guardar no banco a "impressão digital" da lista de peças conferida
+function hash53(str){
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for(let i = 0; i < str.length; i++){
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+// Mesma lista de peças (em qualquer ordem) => mesma assinatura; qualquer mudança nas peças => assinatura diferente
+function assinaturaPecas(pecas){
+  const ordenar = function(o){
+    if(Array.isArray(o)) return o.map(ordenar);
+    if(o && typeof o === "object"){
+      const r = {};
+      Object.keys(o).sort().forEach(function(k){ r[k] = ordenar(o[k]); });
+      return r;
+    }
+    return o;
+  };
+  return hash53((pecas || []).map(function(x){ return JSON.stringify(ordenar(x)); }).sort().join("|"));
+}
+
+function projetoVerificado(p){
+  return !!(p && !p.exemplo && p.verificado && p.verificadoPecas && p.verificadoPecas === p.assinatura);
+}
+
+function seloVerificadoHtml(){
+  return '<span class="selo-verif" title="Um moderador do Ohmia conferiu a lista de peças deste projeto">✔ Lista verificada</span>';
+}
+
+let verifPendente = null;
+
+function renderVerificar(p){
+  const box = $("det-verificar");
+  if(!box) return;
+  verifPendente = null;
+  const valido = projetoVerificado(p);
+  let h = "";
+  if(valido){
+    h += seloVerificadoHtml() + ' <span class="muted">Um moderador conferiu a lista de peças' +
+      (p.verificadoEm ? ' em ' + esc(p.verificadoEm.toLocaleDateString("pt-BR")) : '') +
+      '. Confira sempre os valores no datasheet antes de ligar.</span>';
+  }else if(p.verificado && !p.exemplo && (ehDono(p) || ehModerador())){
+    h += '<span class="muted">O selo de verificação foi removido porque a lista de peças mudou depois da última conferência.</span>';
+  }
+  if(ehModerador() && !p.exemplo){
+    h += '<div class="verif-acoes">' + (valido
+      ? '<button type="button" id="btn-verif-remover">Remover verificação</button>'
+      : '<button type="button" class="primary" id="btn-verif-marcar">Marcar lista como verificada</button>') +
+      '</div><p id="msg-verif" class="msg erro" hidden></p>';
+  }
+  box.innerHTML = h;
+  box.hidden = !h;
+}
+
+$("det-verificar").addEventListener("click", async function(e){
+  const b = e.target.closest("button");
+  if(!b) return;
+  const marcar = b.id === "btn-verif-marcar", remover = b.id === "btn-verif-remover";
+  if(!marcar && !remover) return;
+  const p = projetoAbertoId ? buscarProjeto(projetoAbertoId) : null;
+  if(!p || p.exemplo || !ehModerador()) return;
+  const chave = (marcar ? "m:" : "r:") + p.id;
+  if(verifPendente !== chave){            // primeiro clique pede confirmação
+    verifPendente = chave;
+    b.textContent = marcar ? "Confirmar verificação" : "Confirmar remoção";
+    return;
+  }
+  verifPendente = null;
+  b.disabled = true;
+  try{
+    await updateDoc(doc(db, "projetos", p.id), marcar
+      ? { verificado: true, verificadoPor: currentUser.uid, verificadoEm: serverTimestamp(), verificadoPecas: p.assinatura }
+      : { verificado: false, verificadoPecas: "" });
+  }catch(err){
+    console.error("Erro ao atualizar verificação: ", err);
+    b.disabled = false;
+    const m = $("msg-verif");
+    if(m){ m.textContent = "Não consegui salvar. Confira se as regras do Firestore permitem que moderadores atualizem a verificação."; m.hidden = false; }
+  }
+});
+
 function renderDetalhe(p){
   const av = avaliarProjeto(p, true);
   const fotos = p.fotos || [];
   $("det-autor").innerHTML = autorHtml(p);
   $("det-titulo").textContent = p.titulo;
   $("det-origem").textContent = p.exemplo ? "Projeto de exemplo do Ohmia" : "Projeto da comunidade";
+  renderVerificar(p);
   $("det-descricao").textContent = p.descricao || "";
   $("det-aviso").textContent = p.aviso || "";
   $("det-aviso").hidden = !p.aviso;
@@ -2308,6 +2635,7 @@ function renderDetalhe(p){
   }).join("");
   $("det-fotos").hidden = fotos.length === 0;
   $("det-status").innerHTML = statusHtml(av);
+  renderMontei(p, av);
   $("det-pecas").innerHTML = pecasHtml(p, av);
   $("det-extra").hidden = !p.detalhes;
   $("det-detalhes").textContent = p.detalhes || "";
@@ -2344,6 +2672,9 @@ function renderPerfil(){
   $("btn-banir-perfil").hidden = !(ehModerador() && !meu && !uidEhMod(uid));
   $("perfil-acoes").hidden = !meu || editandoPerfil;
   $("form-perfil").hidden = !(meu && editandoPerfil);
+  const conq = conquistasDe(estatisticasDe(uid));
+  $("perfil-conq-titulo").textContent = "Conquistas (" + conq.filter(function(c){ return c.ok; }).length + "/" + conq.length + ")";
+  $("perfil-conquistas").innerHTML = conq.map(conquistaHtml).join("");
   $("lista-perfil").innerHTML = projs.length
     ? projs.map(cardProjetoHtml).join("")
     : '<p class="vazio">' + (meu ? "Você ainda não publicou nenhum projeto." : "Esta pessoa ainda não publicou projetos.") + '</p>';
@@ -2360,8 +2691,229 @@ function abrirPerfil(uid){
   window.scrollTo(0, 0);
 }
 
+// ===== Conquistas leves (calculadas com dados que o site já carrega; as de inventário só aparecem no próprio perfil) =====
+function listaConquistas(){
+  return [
+    { id: "primeiro-projeto", nome: "Primeiro projeto", desc: "Publique seu primeiro projeto", campo: "projetos", meta: 1 },
+    { id: "construtor", nome: "Construtor", desc: "Publique 5 projetos", campo: "projetos", meta: 5 },
+    { id: "lista-verificada", nome: "Lista verificada", desc: "Tenha um projeto com a lista conferida por um moderador", campo: "verificados", meta: 1 },
+    { id: "primeira-curtida", nome: "Primeira curtida", desc: "Receba uma curtida num projeto seu", campo: "curtidas", meta: 1 },
+    { id: "popular", nome: "Popular", desc: "Receba 25 curtidas nos seus projetos", campo: "curtidas", meta: 25 },
+    { id: "puxou-assunto", nome: "Puxou assunto", desc: "Escreva seu primeiro comentário", campo: "comentarios", meta: 1 },
+    { id: "conversador", nome: "Conversador", desc: "Escreva 10 comentários", campo: "comentarios", meta: 10 },
+    { id: "com-seguidores", nome: "Com seguidores", desc: "Tenha 5 seguidores", campo: "seguidores", meta: 5 },
+    { id: "bancada-aberta", nome: "Bancada aberta", desc: "Cadastre sua primeira peça", campo: "tipos", meta: 1, privado: true },
+    { id: "bancada-cheia", nome: "Bancada cheia", desc: "Tenha 100 unidades no inventário", campo: "unidades", meta: 100, privado: true },
+    { id: "variado", nome: "Variado", desc: "Tenha peças de 5 categorias diferentes", campo: "categorias", meta: 5, privado: true },
+    { id: "almoxarifado", nome: "Almoxarifado", desc: "Tenha 50 tipos de peça diferentes", campo: "tipos", meta: 50, privado: true }
+  ];
+}
+
+// Números de uma pessoa. O inventário (privado) só entra quando é passado.
+function estatisticasConquistas(uid, projetos, curtidasEv, comentariosLista, seguidasEv, inventario){
+  const meus = projetos.filter(function(p){ return !p.exemplo && p.uid === uid; });
+  const ids = {};
+  meus.forEach(function(p){ ids[p.id] = true; });
+  const e = {
+    projetos: meus.length,
+    verificados: meus.filter(function(p){ return projetoVerificado(p); }).length,
+    curtidas: curtidasEv.filter(function(c){ return ids[c.projetoId] && c.uid !== uid; }).length,
+    comentarios: comentariosLista.filter(function(c){ return c.uid === uid; }).length,
+    seguidores: seguidasEv.filter(function(x){ return x.seguido === uid && x.seguidor !== uid; }).length
+  };
+  if(inventario){
+    e.tipos = inventario.length;
+    e.unidades = inventario.reduce(function(s, i){ return s + (parseInt(i.quantidade, 10) || 0); }, 0);
+    const cats = {};
+    inventario.forEach(function(i){ cats[i.categoria] = true; });
+    e.categorias = Object.keys(cats).length;
+  }
+  return e;
+}
+
+function conquistasDe(est){
+  return listaConquistas().filter(function(c){ return !c.privado || est.tipos !== undefined; }).map(function(c){
+    const v = est[c.campo] || 0;
+    return { id: c.id, nome: c.nome, desc: c.desc, meta: c.meta, atual: Math.min(v, c.meta), ok: v >= c.meta };
+  });
+}
+
+function conquistaHtml(c){
+  return '<div class="conquista ' + (c.ok ? "ok" : "bloq") + '"><b>' + esc(c.nome) + '</b><span>' + esc(c.desc) + '</span><small>' +
+    (c.ok ? "✔ Conquistada" : c.atual + "/" + c.meta) + '</small></div>';
+}
+
+function estatisticasDe(uid){
+  const meu = !!(currentUser && currentUser.uid === uid);
+  return estatisticasConquistas(uid, todosProjetos(), curtidasEventos, comentarios, segEventos, meu ? itens : null);
+}
+
+// Guarda quando cada conquista foi vista pela primeira vez. Na primeira vez no aparelho, o que já existe conta como antigo (data 0).
+function atualizarArmazemConquistas(store, okIds, agora){
+  const primeira = store === null;
+  const novo = primeira ? {} : Object.assign({}, store);
+  let mudou = primeira;
+  okIds.forEach(function(id){
+    if(!(id in novo)){ novo[id] = primeira ? 0 : agora; mudou = true; }
+  });
+  return { store: novo, mudou: mudou };
+}
+
+function dadosProntos(){
+  return !!(currentUser && canSave && carregouPublico.proj && carregouPublico.curt && carregouPublico.com && carregouPublico.seg);
+}
+
+// null = ainda não existe; undefined = armazenamento indisponível (nesse caso o recurso de avisos de conquista fica desligado)
+function lerArmazemConquistas(){
+  try{
+    const j = localStorage.getItem("ohmia-conquistas-" + currentUser.uid);
+    return j === null ? null : (JSON.parse(j) || {});
+  }catch(e){ return undefined; }
+}
+
+function registrarConquistas(){
+  if(!dadosProntos()) return;
+  const atual = lerArmazemConquistas();
+  if(atual === undefined) return;
+  const ok = conquistasDe(estatisticasDe(currentUser.uid)).filter(function(c){ return c.ok; }).map(function(c){ return c.id; });
+  const r = atualizarArmazemConquistas(atual, ok, Date.now());
+  if(!r.mudou) return;
+  try{ localStorage.setItem("ohmia-conquistas-" + currentUser.uid, JSON.stringify(r.store)); }catch(e){}
+}
+
+function avisosDeConquista(){
+  if(!currentUser) return [];
+  const store = lerArmazemConquistas();
+  if(!store) return [];
+  const defs = {};
+  listaConquistas().forEach(function(c){ defs[c.id] = c; });
+  return Object.keys(store).filter(function(id){ return store[id] > 0 && defs[id]; }).map(function(id){
+    return { tipo: "conquista", t: store[id], nome: defs[id].nome, desc: defs[id].desc };
+  });
+}
+
+// ===== Avisos (sino): curtidas e comentários nos seus projetos e novos seguidores — calculados com o que o site já carrega =====
+// Data do documento; sem data (documento antigo) = 0, para não aparecer como novo; gravação local ainda pendente = agora
+function tempoDoc(d, campo){
+  const ts = d.data()[campo];
+  if(ts && typeof ts.toMillis === "function") return ts.toMillis();
+  return (d.metadata && d.metadata.hasPendingWrites) ? Date.now() : 0;
+}
+
+function montarNotificacoes(eu, projetos, curtidas, comentariosLista, seguidas, meuNome){
+  const meus = {}, porProjeto = {}, porId = {};
+  projetos.forEach(function(p){ porProjeto[p.id] = p; if(!p.exemplo && p.uid === eu) meus[p.id] = p; });
+  comentariosLista.forEach(function(c){ porId[c.id] = c; });
+  const reMencao = (meuNome && /^[A-Za-z0-9_]{3,20}$/.test(meuNome)) ? new RegExp("(^|[^A-Za-z0-9_@])@" + meuNome + "(?![A-Za-z0-9_])", "i") : null;
+  const lista = [];
+  curtidas.forEach(function(e){
+    if(e.uid !== eu && meus[e.projetoId]) lista.push({ tipo: "curtida", t: e.t || 0, uid: e.uid, projeto: meus[e.projetoId] });
+  });
+  // Cada comentário gera no máximo um aviso: resposta ao seu comentário > menção a você > comentário no seu projeto
+  comentariosLista.forEach(function(c){
+    if(c.uid === eu || !porProjeto[c.projetoId]) return;
+    const pai = c.respostaA ? porId[c.respostaA] : null;
+    let tipo = null;
+    if(pai && pai.uid === eu) tipo = "resposta";
+    else if(reMencao && reMencao.test(c.texto || "")) tipo = "mencao";
+    else if(meus[c.projetoId]) tipo = "comentario";
+    if(tipo) lista.push({ tipo: tipo, t: c.t || 0, uid: c.uid, projeto: porProjeto[c.projetoId], texto: c.texto || "" });
+  });
+  seguidas.forEach(function(e){
+    if(e.seguido === eu && e.seguidor !== eu) lista.push({ tipo: "seguidor", t: e.t || 0, uid: e.seguidor });
+  });
+  lista.sort(function(a, b){ return b.t - a.t; });
+  return lista.slice(0, 50);
+}
+
+function contarNaoLidas(lista, visto){
+  return lista.filter(function(n){ return n.t > visto; }).length;
+}
+
+function tempoRelativo(ms, agora){
+  if(!ms) return "";
+  const s = Math.max(0, Math.round(((agora || Date.now()) - ms) / 1000));
+  if(s < 60) return "agora";
+  if(s < 3600) return "há " + Math.floor(s / 60) + " min";
+  if(s < 86400) return "há " + Math.floor(s / 3600) + " h";
+  if(s < 7 * 86400) return "há " + Math.floor(s / 86400) + (Math.floor(s / 86400) === 1 ? " dia" : " dias");
+  return new Date(ms).toLocaleDateString("pt-BR");
+}
+
+// "Visto até": guardado neste aparelho. Na primeira vez, o que já existe conta como lido.
+function lerVisto(){
+  const k = "ohmia-notif-visto-" + currentUser.uid;
+  try{
+    const v = localStorage.getItem(k);
+    if(v !== null) return parseInt(v, 10) || 0;
+    localStorage.setItem(k, String(Date.now()));
+  }catch(e){}
+  return Date.now();
+}
+function gravarVisto(ms){
+  try{ localStorage.setItem("ohmia-notif-visto-" + currentUser.uid, String(ms)); }catch(e){}
+}
+
+function notificacoesAtuais(){
+  registrarConquistas();
+  const pf = perfisPorUid[currentUser.uid];
+  return montarNotificacoes(currentUser.uid, todosProjetos(), curtidasEventos, comentarios, segEventos, pf ? pf.username : "")
+    .concat(avisosDeConquista()).sort(function(a, b){ return b.t - a.t; }).slice(0, 50);
+}
+
+function atualizarSino(){
+  const b = $("nav-notif");
+  if(!b) return;
+  if(!currentUser){ b.hidden = true; return; }
+  b.hidden = false;
+  const n = contarNaoLidas(notificacoesAtuais(), lerVisto());
+  b.querySelector(".lbl").textContent = "Avisos" + (n ? " (" + (n > 99 ? "99+" : n) + ")" : "");
+  b.classList.toggle("tem-novo", n > 0);
+}
+
+function abrirAvisos(){
+  if(!currentUser) return;
+  const lista = notificacoesAtuais();
+  const visto = lerVisto();
+  const nome = function(uid){ const n = nomeAutor(uid); return '<b>' + (n ? '@' + esc(n) : 'Alguém') + '</b>'; };
+  const linhas = lista.map(function(n){
+    let texto, alvo;
+    if(n.tipo === "curtida"){ texto = nome(n.uid) + ' curtiu o seu projeto <em>' + esc(n.projeto.titulo) + '</em>'; alvo = 'data-projeto="' + esc(n.projeto.id) + '"'; }
+    else if(n.tipo === "comentario" || n.tipo === "resposta" || n.tipo === "mencao"){
+      const t = n.texto.length > 70 ? n.texto.slice(0, 70) + "…" : n.texto;
+      const acao = n.tipo === "resposta" ? " respondeu ao seu comentário em " : (n.tipo === "mencao" ? " mencionou você em " : " comentou em ");
+      texto = nome(n.uid) + acao + '<em>' + esc(n.projeto.titulo) + '</em>: “' + esc(t) + '”';
+      alvo = 'data-projeto="' + esc(n.projeto.id) + '"';
+    }else if(n.tipo === "conquista"){ texto = '<b>Conquista desbloqueada:</b> ' + esc(n.nome) + ' — ' + esc(n.desc); alvo = 'data-perfil="' + esc(currentUser.uid) + '"'; }
+    else{ texto = nome(n.uid) + ' começou a seguir você'; alvo = 'data-perfil="' + esc(n.uid) + '"'; }
+    return '<li><button type="button" class="notif-item' + (n.t > visto ? ' notif-novo' : '') + '" ' + alvo + '>' + texto +
+      '<span class="notif-quando">' + esc(tempoRelativo(n.t)) + '</span></button></li>';
+  });
+  $("notif-corpo").innerHTML = linhas.length
+    ? '<ul class="notif-lista">' + linhas.join("") + '</ul>'
+    : '<p class="muted">Nada por aqui ainda. Quando alguém curtir ou comentar um projeto seu, ou começar a seguir você, aparece aqui.</p>';
+  $("modal-notif").hidden = false;
+  if(lista.length) gravarVisto(Math.max(visto, lista.reduce(function(m, n){ return Math.max(m, n.t); }, 0)));
+  atualizarSino();
+}
+
+function fecharAvisos(){ $("modal-notif").hidden = true; }
+
+$("nav-notif").addEventListener("click", abrirAvisos);
+$("notif-fechar").addEventListener("click", fecharAvisos);
+$("modal-notif").addEventListener("click", function(e){ if(e.target === this) fecharAvisos(); });
+$("notif-corpo").addEventListener("click", function(e){
+  const b = e.target.closest("button.notif-item");
+  if(!b) return;
+  fecharAvisos();
+  if(b.dataset.projeto) abrirProjeto(b.dataset.projeto);
+  else if(b.dataset.perfil) abrirPerfil(b.dataset.perfil);
+});
+document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !$("modal-notif").hidden) fecharAvisos(); });
+
 function atualizarTelas(){
   renderProjetos();
+  atualizarSino();
   if(perfilAbertoUid && !$("view-perfil").hidden) renderPerfil();
   if(!$("view-salvos").hidden) renderSalvos();
   if(!$("view-usuarios").hidden) renderUsuarios();
@@ -2593,6 +3145,7 @@ function comprimirImagem(arquivo, limite){
 function ouvirProjetos(){
   const q = query(collection(db, "projetos"), orderBy("criadoEm", "desc"));
   unsubscribeProjetos = onSnapshot(q, function(snap){
+    carregouPublico.proj = true;
     projetosNuvem = snap.docs.map(function(d){
       const data = d.data();
       const pecas = (data.pecas || []).map(normalizarPeca); // Converte projetos antigos (com "opcoes") para o formato de peça única
@@ -2607,7 +3160,11 @@ function ouvirProjetos(){
         aviso: data.aviso || "",
         pecas: pecas,
         fotos: data.fotos || (data.foto ? [data.foto] : []),
-        uid: data.uid
+        uid: data.uid,
+        assinatura: assinaturaPecas(data.pecas || []),   // identifica a lista de peças como está gravada no banco
+        verificado: data.verificado === true,
+        verificadoEm: (data.verificadoEm && typeof data.verificadoEm.toDate === "function") ? data.verificadoEm.toDate() : null,
+        verificadoPecas: typeof data.verificadoPecas === "string" ? data.verificadoPecas : ""
       };
     });
     atualizarTelas();
@@ -2622,13 +3179,17 @@ function ouvirCurtidas(){
   unsubscribeCurtidas = onSnapshot(collection(db, "curtidas"), function(snap){
     const cont = {};
     const ids = new Set();
+    const eventos = [];
     snap.docs.forEach(function(d){
       const x = d.data();
       ids.add(d.id);
       cont[x.projetoId] = (cont[x.projetoId] || 0) + 1;
+      eventos.push({ projetoId: x.projetoId, uid: x.uid, t: tempoDoc(d, "criadoEm") });
     });
     curtidasContagem = cont;
     curtidasIds = ids;
+    curtidasEventos = eventos;
+    carregouPublico.curt = true;
     atualizarTelas();
   }, function(err){
     console.error("Erro ao ler curtidas: ", err);
@@ -2659,7 +3220,7 @@ async function alternarCurtida(projetoId){
 // Lê todos os comentários em tempo real (ordenados do mais antigo ao mais novo)
 function ouvirComentarios(){
   unsubscribeComentarios = onSnapshot(collection(db, "comentarios"), function(snap){
-    const lista = snap.docs.map(function(d){ return Object.assign({ id: d.id }, d.data()); });
+    const lista = snap.docs.map(function(d){ return Object.assign({ id: d.id, t: tempoDoc(d, "criadoEm") }, d.data()); });
     lista.sort(function(a, b){
       const ta = a.criadoEm && a.criadoEm.toMillis ? a.criadoEm.toMillis() : Date.now();
       const tb = b.criadoEm && b.criadoEm.toMillis ? b.criadoEm.toMillis() : Date.now();
@@ -2668,6 +3229,7 @@ function ouvirComentarios(){
     const cont = {};
     lista.forEach(function(c){ cont[c.projetoId] = (cont[c.projetoId] || 0) + 1; });
     comentarios = lista;
+    carregouPublico.com = true;
     comentariosContagem = cont;
     atualizarTelas();
   }, function(err){
@@ -2692,11 +3254,12 @@ function ouvirSalvos(){
 // Seguir: lê todas as relações para mostrar contagens nos perfis
 function ouvirSeguindo(){
   unsubscribeSeguindo = onSnapshot(collection(db, "seguindo"), function(snap){
-    const seguidores = {}, seguindo = {}, ids = new Set(), rel = [];
+    const seguidores = {}, seguindo = {}, ids = new Set(), rel = [], eventos = [];
     snap.docs.forEach(function(d){
       const x = d.data();
       ids.add(d.id);
       rel.push({ a: x.seguidor, b: x.seguido });
+      eventos.push({ seguidor: x.seguidor, seguido: x.seguido, t: tempoDoc(d, "criadoEm") });
       seguidores[x.seguido] = (seguidores[x.seguido] || 0) + 1;
       seguindo[x.seguidor] = (seguindo[x.seguidor] || 0) + 1;
     });
@@ -2704,6 +3267,8 @@ function ouvirSeguindo(){
     segContagemSeguindo = seguindo;
     segIds = ids;
     segRelacoes = rel;
+    segEventos = eventos;
+    carregouPublico.seg = true;
     atualizarTelas();
   }, function(err){
     console.error("Erro ao ler seguidores: ", err);
@@ -3821,6 +4386,8 @@ document.addEventListener("click", function(e){
   if(pf) abrirPerfil(pf.dataset.perfil);
   const sv = e.target.closest("button[data-salvar]");
   if(sv) alternarSalvar(sv.dataset.salvar);
+  const rp = e.target.closest("button[data-responder]");
+  if(rp) iniciarResposta(rp.dataset.responder);
   const ex = e.target.closest("button[data-excluir-com]");
   if(ex && confirm("Excluir este comentário?")){
     deleteDoc(doc(db, "comentarios", ex.dataset.excluirCom)).catch(function(err){
@@ -3840,7 +4407,9 @@ $("nav-salvos").addEventListener("click", function(){
   showView("view-salvos");
 });
 $("filtro-feed").addEventListener("change", renderProjetos);
+$("com-cancelar-resp").addEventListener("click", cancelarResposta);
 $("filtro-montar").addEventListener("change", renderProjetos);
+$("so-verificados").addEventListener("change", renderProjetos);
 $("ordem-projetos").addEventListener("change", renderProjetos);
 $("btn-seguir").addEventListener("click", function(){ if(perfilAbertoUid) alternarSeguir(perfilAbertoUid); });
 
@@ -3928,9 +4497,24 @@ $("form-comentario").addEventListener("submit", async function(e){
   $("btn-comentar").disabled = true;
   msgEl.textContent = "";
   try{
-    await addDoc(collection(db, "comentarios"), { projetoId: projetoAbertoId, uid: currentUser.uid, texto: texto, criadoEm: serverTimestamp() });
+    const dados = { projetoId: projetoAbertoId, uid: currentUser.uid, texto: texto, criadoEm: serverTimestamp() };
+    if(respondendoA && respondendoA.projetoId === projetoAbertoId) dados.respostaA = respondendoA.id;
+    let semVinculo = false;
+    try{
+      await addDoc(collection(db, "comentarios"), dados);
+    }catch(e1){
+      // Regras do Firestore que ainda não aceitam o campo da resposta: envia como comentário comum (a menção @ continua valendo)
+      if(dados.respostaA && e1 && e1.code === "permission-denied"){
+        delete dados.respostaA;
+        await addDoc(collection(db, "comentarios"), dados);
+        semVinculo = true;
+      }else throw e1;
+    }
     $("com-texto").value = "";
     $("com-contador").textContent = "0/500";
+    respondendoA = null;
+    atualizarBannerResposta();
+    if(semVinculo){ msgEl.textContent = "Comentário enviado, mas sem o vínculo de resposta (as regras do Firestore ainda não aceitam respostas)."; msgEl.className = "msg"; }
   }catch(err){
     console.error(err);
     erro("Não consegui enviar o comentário: " + err.message);
