@@ -1863,13 +1863,22 @@ function numeroRelaxado(def, txt){
 
 // Um item do inventário atende a uma peça se tiver a mesma categoria
 // e os mesmos valores nos campos que o projeto preencheu. Campos em branco no projeto são ignorados.
+// Campos que realmente contam numa peça de projeto: os necessários (não marcados como opcionais).
+// Os opcionais só entram se a peça não tiver nenhum campo necessário preenchido (aí eles são tudo o que a peça pede).
+function chavesQueContam(categoria, campos){
+  const defs = (CAT[categoria] && CAT[categoria].c) || [];
+  const todas = Object.keys(campos || {}).filter(function(k){ return campos[k] && defs.some(function(d){ return d.k === k; }); });
+  const necessarias = todas.filter(function(k){ return !defs.find(function(d){ return d.k === k; }).opcional; });
+  return necessarias.length ? necessarias : todas;
+}
+
 function casa(item, peca){
   const p = normalizarPeca(peca);
   if(item.categoria !== p.categoria || !CAT[p.categoria]) return false;
   const defs = CAT[p.categoria].c;
   const requisito = p.campos || {};
   const meus = item.campos || {};
-  return Object.keys(requisito).every(function(k){
+  return chavesQueContam(p.categoria, requisito).every(function(k){
     const v = requisito[k];
     if(!v) return true;
     const def = defs.find(function(d){ return d.k === k; });
@@ -2120,7 +2129,8 @@ function textoPeca(peca){
   const p = normalizarPeca(peca);
   const cat = CAT[p.categoria];
   const nome = cat ? cat.n : p.categoria;
-  const vals = cat ? cat.c.map(function(f){ return p.campos[f.k]; }).filter(Boolean) : [];
+  const usar = chavesQueContam(p.categoria, p.campos);
+  const vals = cat ? cat.c.filter(function(f){ return usar.indexOf(f.k) > -1; }).map(function(f){ return p.campos[f.k]; }).filter(Boolean) : [];
   return p.qtd + "x " + nome + (vals.length ? " " + vals.join(" · ") : "") + (p.obs ? " (" + p.obs + ")" : "");
 }
 
