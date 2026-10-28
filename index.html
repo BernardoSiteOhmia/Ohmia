@@ -86,6 +86,8 @@ button.text-btn:hover{color:var(--text)}
 .ia-rev-item.incompleto{color:var(--muted)}
 .ia-rev-nota{font-size:13px;color:var(--muted);display:block}
 .ia-revisao .actions{margin-top:10px}
+.lig-sel{width:auto;max-width:100%;display:inline-block;margin:2px 4px}
+.ia-rev-item .lig-corpo{flex:1;min-width:0}
 .rapido{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
 .rapido-topo{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
 .rapido-palco{border:1px solid var(--line);border-radius:8px;padding:10px 8px 8px;background:var(--bg);cursor:pointer;text-align:center}
@@ -580,11 +582,25 @@ button.com-denunciar{color:var(--muted)}
         <button type="button" id="csv-exportar">Exportar planilha</button>
         <button type="button" id="csv-importar">Importar planilha</button>
         <button type="button" id="csv-modelo" class="text-btn">Baixar planilha modelo</button>
+        <button type="button" id="lig-abrir">Ligar itens ao catálogo</button>
         <input type="file" id="csv-arquivo" accept=".xlsx,.xls" hidden>
       </div>
       <p class="csv-ajuda">A planilha tem uma aba por categoria (Resistores, Capacitores…). Baixe o modelo, preencha uma peça por linha e importe de volta, ou exporte seu inventário para editar no Excel, Planilhas Google ou LibreOffice. Itens que já existem têm a quantidade somada.</p>
       <p id="csv-msg" class="msg" role="status"></p>
       <ul id="csv-erros" class="csv-erros" hidden></ul>
+      <div id="lig-painel" class="ia-revisao" hidden>
+        <strong id="lig-titulo"></strong>
+        <p class="muted" id="lig-ajuda">Cada pergunta compara o que você cadastrou com as peças do catálogo. Marque as que estão certas e escolha o modelo correto na lista. Ao ligar, o nome fica igual ao do catálogo e os campos vazios (tipo, encapsulamento, tensão…) são preenchidos; o que você já escreveu não é trocado.</p>
+        <div id="lig-lista"></div>
+        <p id="lig-resto" class="ia-rev-nota" hidden></p>
+        <div class="actions">
+          <button type="button" class="primary" id="lig-aplicar">Ligar marcados</button>
+          <button type="button" id="lig-desfazer" hidden>Desfazer última ligação</button>
+          <button type="button" id="lig-fechar">Fechar</button>
+          <button type="button" id="lig-reperguntar" class="text-btn" hidden>Perguntar de novo os que marquei como fora do catálogo</button>
+        </div>
+        <p id="lig-msg" class="msg" role="status"></p>
+      </div>
       <ul id="lista" class="lista"></ul>
       <p id="status" class="status">Carregando…</p>
     </section>
@@ -1514,6 +1530,7 @@ function renderInventario(){
   renderPainel();
   if(!currentUser){
     lista.innerHTML='<li class="vazio">Faça login para gerenciar seu inventário na nuvem.</li>'; 
+    try{ ligFechar(); }catch(e){}
     $("resumo").textContent = "";
     return; 
   }
@@ -5104,6 +5121,201 @@ $("inv-ia-adicionar").addEventListener("click", function(){
 $("inv-ia-descartar").addEventListener("click", function(){ invIaFechar(); invIaMsg("", false); });
 $("inv-ia-texto").addEventListener("click", invIaAnalisar);
 $("inv-lista-texto").addEventListener("input", function(){ $("inv-ia-texto").disabled = !this.value.trim(); });
+
+// ===== Ligar itens do inventário ao catálogo =====
+// Itens cadastrados à mão ("a2030") não são reconhecidos pelo catálogo ("TDA2030"). Aqui o site sugere o modelo certo
+// e, com a sua confirmação, troca o nome e preenche os campos que estiverem vazios. Nada é trocado sem o seu "ok".
+const LIG_LOTE = 30;
+let ligPend = [], ligAntes = null;
+
+function ligMsg(t, erro){ const m = $("lig-msg"); m.textContent = t || ""; m.className = "msg" + (erro ? " erro" : ""); }
+function ligFechar(){ ligPend = []; const p = $("lig-painel"); if(p){ p.hidden = true; $("lig-lista").innerHTML = ""; ligMsg("", false); } }
+
+function ligNaoLigados(incluirIgnorados){
+  return itens.filter(function(i){
+    return cfg(i).m && i.campos && i.campos.modelo && catalogoPorCat[i.categoria] &&
+      (incluirIgnorados || !i.semCatalogo) && !acharNoCatalogo(i.categoria, i.campos.modelo);
+  });
+}
+
+function ligDistancia(a, b){
+  const m = a.length, n = b.length;
+  let ant = [], atual = [];
+  for(let j = 0; j <= n; j++) ant[j] = j;
+  for(let i = 1; i <= m; i++){
+    atual = [i];
+    for(let j = 1; j <= n; j++) atual[j] = Math.min(ant[j] + 1, atual[j - 1] + 1, ant[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    ant = atual;
+  }
+  return ant[n];
+}
+
+// O tipo/canal que o item já tem contradiz o do catálogo? (ex.: item NPN, catálogo PNP)
+function ligConflito(item, ent){
+  const defs = CAT[item.categoria].c;
+  return ["tipo", "canal", "func"].some(function(k){
+    const v = item.campos[k];
+    if(!v || !ent.t || !defs.some(function(d){ return d.k === k; })) return false;
+    return v !== ent.t && v !== "Canal " + ent.t && normTexto(v) !== normTexto(ent.t);
+  });
+}
+
+function ligCandidatos(item){
+  const q = nBusca(item.campos.modelo);
+  if(q.length < 3 || !/\d/.test(q)) return [];
+  const lista = catalogoPorCat[item.categoria] || [];
+  const runs = q.match(/\d+/g) || [];
+  const qd = runs.sort(function(a, b){ return b.length - a.length; })[0] || "";
+  const achados = [];
+  for(let k = 0; k < lista.length; k++){
+    const ent = lista[k], n = ent.n;
+    let sc = 0;
+    if(n.indexOf(q) > -1 || q.indexOf(n) > -1){
+      const curto = Math.min(n.length, q.length), longo = Math.max(n.length, q.length);
+      if(curto >= 3) sc = 0.5 + 0.5 * curto / longo;                 // "a2030" dentro de "tda2030"
+    }else if(q.length >= 4 && Math.abs(n.length - q.length) <= 1 && (qd.length < 2 || n.indexOf(qd) > -1)){
+      const d = ligDistancia(q, n);
+      if(d <= (q.length >= 7 ? 2 : 1)) sc = 0.45 + 0.5 * (1 - d / Math.max(n.length, q.length));   // erro de digitação
+    }
+    if(sc >= 0.6) achados.push({ ent: ent, sc: sc, conf: ligConflito(item, ent) });
+  }
+  achados.sort(function(a, b){ return (b.sc - a.sc) || (a.ent.n.length - b.ent.n.length); });
+  return achados.slice(0, 5);
+}
+
+function ligAnalisar(incluirIgnorados){
+  if(!currentUser) return ligMsg("Você precisa estar logado.", true);
+  if(catalogoEstado === "carregando") { $("lig-painel").hidden = false; return ligMsg("O catálogo ainda está carregando. Tente de novo em alguns segundos.", true); }
+  if(catalogoEstado !== "ok") { $("lig-painel").hidden = false; return ligMsg("Não consegui carregar o catálogo agora. Tente de novo mais tarde.", true); }
+  const todos = ligNaoLigados(incluirIgnorados);
+  const comSug = [], semSug = [];
+  todos.forEach(function(i){
+    const c = ligCandidatos(i);
+    if(c.length){
+      const alta = c[0].sc >= 0.85 && !c[0].conf && (c.length < 2 || c[0].sc - c[1].sc >= 0.1);
+      comSug.push({ id: i.id, cands: c, alta: alta });
+    }else semSug.push(i);
+  });
+  comSug.sort(function(a, b){ return (b.alta - a.alta) || (b.cands[0].sc - a.cands[0].sc); });
+  ligPend = comSug;
+  const painel = $("lig-painel");
+  painel.hidden = false;
+  $("lig-reperguntar").hidden = !itens.some(function(i){ return i.semCatalogo; });
+  if(!todos.length){
+    $("lig-titulo").textContent = "Todos os seus itens com modelo já estão ligados ao catálogo.";
+    $("lig-lista").innerHTML = ""; $("lig-resto").hidden = true; $("lig-aplicar").disabled = true;
+    return;
+  }
+  $("lig-titulo").textContent = todos.length + (todos.length === 1 ? " item não está ligado" : " itens não estão ligados") + " ao catálogo" +
+    (comSug.length ? ". Encontrei sugestão para " + comSug.length + (comSug.length > LIG_LOTE ? " (mostrando " + LIG_LOTE + " por vez)" : "") + ":" : ".");
+  $("lig-lista").innerHTML = comSug.slice(0, LIG_LOTE).map(function(x, n){
+    const i = itens.find(function(y){ return y.id === x.id; });
+    const opcoes = x.cands.map(function(c, k){
+      return '<option value="' + k + '">' + esc(c.ent.m) + (c.conf ? " (⚠ tipo diferente do seu)" : "") + '</option>';
+    }).join("") + '<option value="nao">Nenhum — não está no catálogo</option>';
+    return '<div class="ia-rev-item" data-id="' + esc(x.id) + '">' +
+      '<input type="checkbox" aria-label="Ligar este item"' + (x.alta ? " checked" : "") + '>' +
+      '<div class="lig-corpo"><span>Seu item <strong>' + esc(i.campos.modelo) + '</strong> é</span>' +
+      '<select class="lig-sel" aria-label="Modelo do catálogo">' + opcoes + '</select><span>?</span>' +
+      '<span class="ia-rev-nota">' + esc(CAT[i.categoria].n) + " · " + i.quantidade + (i.quantidade === 1 ? " unidade" : " unidades") + '</span></div></div>';
+  }).join("");
+  const restoSug = Math.max(0, comSug.length - LIG_LOTE);
+  const nomes = semSug.slice(0, 12).map(function(i){ return i.campos.modelo; });
+  const linhas = [];
+  if(restoSug) linhas.push("Mais " + restoSug + (restoSug === 1 ? " sugestão aparece" : " sugestões aparecem") + " depois que você ligar estes.");
+  if(semSug.length) linhas.push(semSug.length + (semSug.length === 1 ? " item sem nenhuma sugestão" : " itens sem nenhuma sugestão") + " (talvez não estejam no catálogo ou o nome esteja muito diferente): " + nomes.join(", ") + (semSug.length > nomes.length ? "…" : "") + ". Você pode corrigir o nome em Editar.");
+  $("lig-resto").textContent = linhas.join(" ");
+  $("lig-resto").hidden = !linhas.length;
+  $("lig-aplicar").disabled = !comSug.length;
+}
+
+// Põe o modelo do catálogo e preenche só o que está vazio
+function ligLigar(item, ent){
+  const defs = CAT[item.categoria].c, campos = item.campos;
+  campos.modelo = ent.m;
+  ["tipo", "canal", "func"].some(function(k){
+    const d = defs.find(function(f){ return f.k === k; });
+    if(!d || campos[k] || !ent.t) return false;
+    const o = (d.o || []);
+    const v = o.indexOf(ent.t) > -1 ? ent.t : (k === "canal" && o.indexOf("Canal " + ent.t) > -1 ? "Canal " + ent.t : "");
+    if(!v) return false;
+    campos[k] = v; return true;
+  });
+  const dEnc = defs.find(function(f){ return f.k === "encap"; });
+  if(dEnc && !campos.encap && ent.p && (dEnc.o || []).indexOf(ent.p) > -1) campos.encap = ent.p;
+  Object.keys(ent.e || {}).forEach(function(k){
+    if(defs.some(function(f){ return f.k === k; }) && !campos[k]) campos[k] = ent.e[k];
+  });
+}
+
+// Dois itens do mesmo modelo, sem nenhum campo preenchido que se contradiga, são a mesma peça
+function ligMesmaPeca(a, b){
+  if(a === b || a.categoria !== b.categoria) return false;
+  if(nBusca(a.campos.modelo) !== nBusca(b.campos.modelo)) return false;
+  return Object.keys(Object.assign({}, a.campos, b.campos)).every(function(k){
+    const x = a.campos[k], y = b.campos[k];
+    return !x || !y || normTexto(x) === normTexto(y);
+  });
+}
+
+function ligAplicar(){
+  if(!currentUser) return ligMsg("Você precisa estar logado para salvar.", true);
+  if(!canSave) return ligMsg("Aguarde, conectando ao servidor...", true);
+  const linhas = Array.prototype.slice.call($("lig-lista").querySelectorAll(".ia-rev-item"));
+  const marcadas = linhas.filter(function(l){ return l.querySelector("input[type=checkbox]").checked; });
+  if(!marcadas.length) return ligMsg("Marque pelo menos um item.", true);
+  ligAntes = JSON.parse(JSON.stringify(itens));
+  let ligados = 0, somados = 0, fora = 0;
+  marcadas.forEach(function(l){
+    const item = itens.find(function(i){ return i.id === l.dataset.id; });
+    const pend = ligPend.find(function(x){ return x.id === l.dataset.id; });
+    if(!item || !pend) return;
+    const escolha = l.querySelector("select").value;
+    if(escolha === "nao"){ item.semCatalogo = true; fora++; return; }
+    const cand = pend.cands[parseInt(escolha, 10)];
+    if(!cand) return;
+    ligLigar(item, cand.ent);
+    delete item.semCatalogo;
+    ligados++;
+    const outro = itens.find(function(x){ return ligMesmaPeca(item, x); });
+    if(outro){
+      outro.quantidade = (parseInt(outro.quantidade, 10) || 0) + (parseInt(item.quantidade, 10) || 0);
+      Object.keys(item.campos).forEach(function(k){ if(!outro.campos[k]) outro.campos[k] = item.campos[k]; });
+      if(!outro.obs && item.obs) outro.obs = item.obs;
+      itens = itens.filter(function(x){ return x !== item; });
+      somados++;
+    }
+  });
+  pendingDel = null;
+  render();
+  persist();
+  ligAnalisar(false);
+  $("lig-desfazer").hidden = false;
+  ligMsg(ligados + (ligados === 1 ? " item ligado" : " itens ligados") +
+    (somados ? ", " + somados + (somados === 1 ? " somado a um item que você já tinha" : " somados a itens que você já tinha") : "") +
+    (fora ? "; " + fora + " marcado" + (fora === 1 ? "" : "s") + " como fora do catálogo" : "") + ".", false);
+}
+
+function ligDesfazer(){
+  if(!ligAntes || !canSave) return;
+  itens = ligAntes; ligAntes = null;
+  pendingDel = null;
+  render();
+  persist();
+  ligAnalisar(false);
+  $("lig-desfazer").hidden = true;
+  ligMsg("Última ligação desfeita.", false);
+}
+
+$("lig-abrir").addEventListener("click", function(){ ligAntes = null; $("lig-desfazer").hidden = true; ligMsg("", false); ligAnalisar(false); });
+$("lig-aplicar").addEventListener("click", ligAplicar);
+$("lig-desfazer").addEventListener("click", ligDesfazer);
+$("lig-fechar").addEventListener("click", ligFechar);
+$("lig-reperguntar").addEventListener("click", function(){
+  itens.forEach(function(i){ delete i.semCatalogo; });
+  persist();
+  ligAnalisar(false);
+});
 
 // --- Modo rápido: resistor pelo código de cores (teclado ou toque) ---
 // Cada cor: tecla, nome, cor na tela, dígito, multiplicador, tolerância (%), coeficiente de temperatura (ppm/°C)
