@@ -210,6 +210,12 @@ button.barra:hover .barra-trilho,button.barra.ativa .barra-trilho{background:var
 .selo-verif{display:inline-block;padding:2px 8px;border:1px solid var(--ok);color:var(--ok);border-radius:3px;font-size:12.5px;font-weight:500;white-space:nowrap}
 #det-verificar{margin:6px 0 12px}
 .filtros .chave{margin:0;align-self:center}
+.acoes-projetos{display:flex;flex-direction:column;align-items:stretch;gap:10px}
+.acoes-projetos button{height:46px;box-sizing:border-box;margin:0}
+.linha-checks{display:flex;align-items:center;justify-content:space-between;gap:10px 20px;flex-wrap:wrap;margin:0 0 14px}
+.linha-checks .chave{margin:0;white-space:nowrap}
+.linha-checks .chave:last-child{margin-left:auto}
+@media(max-width:760px){.acoes-projetos{flex:1 1 100%}}
 .nav-btn.tem-novo .lbl{color:var(--accent);font-weight:700}
 .notif-lista{list-style:none;margin:8px 0;padding:0;max-height:55vh;overflow:auto}
 button.notif-item{display:block;width:100%;text-align:left;padding:10px 10px 10px 12px;margin:0;border:0;border-bottom:1px solid var(--line);border-left:3px solid transparent;border-radius:0;background:transparent;color:var(--text);font:inherit;font-size:14px;font-weight:400;cursor:pointer}
@@ -432,7 +438,7 @@ button.com-denunciar{color:var(--muted)}
   <!-- TELA 1: PROJETOS -->
   <div id="view-projetos">
     <p class="sub">Descubra circuitos incríveis para montar. Crie sua conta para cruzar as peças necessárias com o seu inventário!</p>
-    <div class="toolbar" style="align-items: center; margin-bottom: 16px;">
+    <div class="toolbar" style="align-items: flex-start; margin-bottom: 16px;">
       <div class="filtros" style="justify-content: flex-start; flex: 1;">
         <input id="busca-projetos" type="search" placeholder="Procurar por nome ou descrição...">
         <select id="filtro-tipo-projeto">
@@ -443,7 +449,6 @@ button.com-denunciar{color:var(--muted)}
           <option value="">Todos os projetos</option>
           <option value="seguindo">Só de quem eu sigo</option>
         </select>
-        <label class="chave"><input type="checkbox" id="so-verificados"> Só com lista verificada</label>
         <select id="filtro-montar" hidden aria-label="Filtrar pelo que dá para montar">
           <option value="">Qualquer disponibilidade</option>
           <option value="montar">Posso montar agora</option>
@@ -454,12 +459,15 @@ button.com-denunciar{color:var(--muted)}
           <option value="pct">Mais perto de montar</option>
         </select>
       </div>
-      <div>
+      <div class="acoes-projetos">
         <button type="button" id="btn-novo-projeto" class="primary" hidden>+ Novo projeto</button>
       </div>
     </div>
 
-    <label class="chave comparar-wrap" hidden><input type="checkbox" class="chk-comparar"> Comparar com o meu inventário</label>
+    <div class="linha-checks">
+      <label class="chave comparar-wrap" hidden><input type="checkbox" class="chk-comparar"> Comparar com o meu inventário</label>
+      <label class="chave"><input type="checkbox" id="so-verificados"> Só com lista verificada</label>
+    </div>
     <div id="lista-projetos" class="projetos-grid"></div>
   </div>
 
