@@ -1880,9 +1880,89 @@ function chavesQueContam(categoria, campos){
   return necessarias.length ? necessarias : todas;
 }
 
+// ---- Equivalência por especificações (peças identificadas pelo modelo) ----
+// O projeto pede, por exemplo, 1N4004 (400 V, 1 A) e você tem 1N4007 (1000 V, 1 A): serve, porque cobre o pedido.
+// As especificações vêm do que está preenchido na peça ou, se faltar, do catálogo.
+// Dois níveis:
+//   "serve":   conta como peça que você tem (troca direta, sem risco para o circuito)
+//   "confira": NÃO conta; aparece como sugestão ("pode servir, confira ...") porque há detalhes que o catálogo não traz
+// Prudência: se não der para comparar com certeza (valor desconhecido), não considera equivalente.
+const EQUIV_CAT = {
+  "Diodos": {
+    campoT: "tipo", maior: ["tensao", "corrente"], menor: ["trr"], iguais: ["tipo", "encap"],
+    modoPorTipo: { "Retificador Comum": "serve", "Schottky": "confira" },   // zener, TVS, ponte e rápido ficam de fora
+    aviso: "confira a queda de tensão e a velocidade no datasheet", criterio: "tensão e corrente iguais ou maiores"
+  },
+  "Transistores bipolares": {
+    campoT: "tipo", maior: ["vceo", "corrente"], menor: [], iguais: ["tipo", "encap"], modo: "confira",
+    aviso: "confira a pinagem, o ganho (hFE) e a potência no datasheet", criterio: "mesmo tipo e encapsulamento, tensão e corrente iguais ou maiores"
+  },
+  "MOSFETs": {
+    campoT: "canal", maior: ["vds", "id"], menor: ["rds"], iguais: ["canal", "encap"], modo: "confira",
+    aviso: "confira a tensão de acionamento do gate (VGS(th)) e a pinagem no datasheet", criterio: "mesmo canal e encapsulamento, VDS e ID iguais ou maiores"
+  },
+  "Reguladores de tensão": {
+    campoT: "tipo", maior: ["corrente"], menor: [], iguais: ["tipo", "vout", "encap"], modo: "confira",
+    aviso: "confira a pinagem e a tensão de entrada no datasheet", criterio: "mesmo tipo, tensão de saída e encapsulamento, corrente igual ou maior"
+  }
+};
+let especCache = {};
+
+function especsEfetivas(cat, campos){
+  const c = Object.assign({}, campos || {});
+  const modelo = c.modelo || "";
+  if(!modelo) return c;
+  const cfg = EQUIV_CAT[cat];
+  const chave = cat + "|" + normTexto(modelo);
+  if(!(chave in especCache)){
+    const ent = acharNoCatalogo(cat, modelo);
+    // o catálogo guarda o tipo em "t" e o encapsulamento em "p"; as demais especificações ficam em "e"
+    const base = {};
+    if(ent && ent.t && cfg && cfg.campoT) base[cfg.campoT] = ent.t;
+    if(ent && ent.p) base.encap = ent.p;
+    especCache[chave] = ent ? Object.assign(base, ent.e || {}) : null;
+  }
+  const e = especCache[chave];
+  if(e) Object.keys(e).forEach(function(k){ if(!c[k]) c[k] = e[k]; });
+  return c;
+}
+
+// Devolve null (não serve), "serve" ou "confira"
+function equivalencia(item, p){
+  const cfg = EQUIV_CAT[p.categoria];
+  if(!cfg || item.categoria !== p.categoria) return null;
+  const req = p.campos || {}, meus = item.campos || {};
+  if(!req.modelo || !meus.modelo) return null;
+  if(normTexto(req.modelo) === normTexto(meus.modelo)) return null;   // mesmo modelo: a regra normal já trata
+  const defs = CAT[p.categoria].c;
+  const R = especsEfetivas(p.categoria, req), M = especsEfetivas(item.categoria, meus);
+  const modo = cfg.modoPorTipo ? cfg.modoPorTipo[R[cfg.campoT] || ""] : cfg.modo;
+  if(!modo) return null;
+  function num(k, src){ const d = defs.find(function(x){ return x.k === k; }); return d ? numeroRelaxado(d, src[k]) : null; }
+  const folga = function(a, b){ return 1e-9 * Math.max(1, Math.abs(a), Math.abs(b)); };
+  for(const k of cfg.maior){
+    const a = num(k, R), b = num(k, M);
+    if(a === null || b === null || b < a - folga(a, b)) return null;
+  }
+  for(const k of cfg.menor){
+    if(!R[k]) continue;                       // o pedido não limita este campo
+    const a = num(k, R), b = num(k, M);
+    if(a === null || b === null || b > a + folga(a, b)) return null;
+  }
+  for(const k of cfg.iguais){
+    // tipo, canal, encapsulamento, tensão de saída: precisam ser conhecidos e iguais (sem arriscar)
+    if(!R[k] || !M[k] || normTexto(R[k]).replace(/\s+/g, "") !== normTexto(M[k]).replace(/\s+/g, "")) return null;
+  }
+  return modo;
+}
+
 function casa(item, peca){
   const p = normalizarPeca(peca);
   if(item.categoria !== p.categoria || !CAT[p.categoria]) return false;
+  return casaPadrao(item, p) || equivalencia(item, p) === "serve";
+}
+
+function casaPadrao(item, p){
   const defs = CAT[p.categoria].c;
   const requisito = p.campos || {};
   const meus = item.campos || {};
@@ -2089,6 +2169,19 @@ function avaliarProjeto(p, comAssociacao){
     const cands = itens.filter(function(i){ return casa(i, peca); });
     const ord = ordemRelaxada(peca);
     if(ord) cands.sort(ord);
+    if(EQUIV_CAT[peca.categoria]){
+      // modelo igual ao pedido primeiro; depois o de menores valores que ainda atende (guarda os "melhores" para quem precisa)
+      const modeloPedido = normTexto((peca.campos && peca.campos.modelo) || "");
+      const chavesMed = EQUIV_CAT[peca.categoria].maior;
+      const medida = function(i, k){ const e = especsEfetivas(i.categoria, i.campos); const d = CAT[i.categoria].c.find(function(x){ return x.k === k; }); const n = d ? numeroRelaxado(d, e[k]) : null; return n === null ? Infinity : n; };
+      cands.sort(function(a, b){
+        const ea = normTexto((a.campos && a.campos.modelo) || "") === modeloPedido ? 0 : 1;
+        const eb = normTexto((b.campos && b.campos.modelo) || "") === modeloPedido ? 0 : 1;
+        let r = ea - eb;
+        for(let n = 0; n < chavesMed.length && !r; n++){ const ma = medida(a, chavesMed[n]), mb = medida(b, chavesMed[n]); r = ma === mb ? 0 : (ma < mb ? -1 : 1); }
+        return r;
+      });
+    }
     const disp = cands.reduce(function(s, i){ return s + restante[i.id]; }, 0);
     const tenho = Math.min(qtd, disp);
     let a = tenho;
@@ -2100,7 +2193,29 @@ function avaliarProjeto(p, comAssociacao){
       a -= usar;
       if(usar > 0) usos.push({ id: i.id, n: usar });
     }
-    resultados[idx] = { tipo: tenho >= qtd ? "ok" : "falta", qtd: qtd, tenho: tenho, faltam: qtd - tenho, usos: usos };
+    // peças atendidas por um modelo diferente do pedido (ex.: pediu 1N4004, você tem 1N4007)
+    const subs = [];
+    const modeloPed = (peca.campos && peca.campos.modelo) || "";
+    if(EQUIV_CAT[peca.categoria] && modeloPed){
+      usos.forEach(function(u){
+        const it = itens.find(function(x){ return x.id === u.id; });
+        const m = it && it.campos && it.campos.modelo;
+        if(m && normTexto(m) !== normTexto(modeloPed)) subs.push(u.n + "x " + m);
+      });
+    }
+    resultados[idx] = { tipo: tenho >= qtd ? "ok" : "falta", qtd: qtd, tenho: tenho, faltam: qtd - tenho, usos: usos, subs: subs };
+  });
+
+  // Peças que faltam: procura no inventário peças parecidas que talvez sirvam (transistores, MOSFETs, reguladores...), sem contá-las
+  resultados.forEach(function(r, idx){
+    if(r.tipo !== "falta") return;
+    const peca = norm[idx], cfg = EQUIV_CAT[peca.categoria];
+    if(!cfg) return;
+    const achados = [];
+    itens.forEach(function(i){
+      if((restante[i.id] || 0) > 0 && equivalencia(i, peca) === "confira") achados.push(restante[i.id] + "x " + i.campos.modelo);
+    });
+    if(achados.length) r.sug = "Você tem " + achados.slice(0, 3).join(", ") + (achados.length > 3 ? " e outros" : "") + " que pode servir (" + cfg.criterio + "); " + cfg.aviso + ".";
   });
 
   // Peças que faltam: procura associações série/paralelo (resistores e capacitores) com o que sobrou
@@ -2147,8 +2262,10 @@ function pecasHtml(p, av){
     const txt = esc(textoPeca(peca));
     if(!av) return '<li><span>' + txt + '</span></li>';
     const r = av.pecas[idx];
-    if(r.tipo === "ok") return '<li><span>' + txt + '</span><span class="ok estado">Você tem ' + r.tenho + ' de ' + r.qtd + '</span></li>';
-    return '<li><span>' + txt + '</span><span class="falta estado">Faltam ' + r.faltam + ' (você tem ' + r.tenho + ' de ' + r.qtd + ')</span>' +
+    const aviso = (r.subs && r.subs.length) ? '<span class="combo-dica">Seu inventário atende com ' + esc(r.subs.join(" e ")) + ' (especificações iguais ou melhores que o pedido).</span>' : '';
+    if(r.tipo === "ok") return '<li><span>' + txt + '</span><span class="ok estado">Você tem ' + r.tenho + ' de ' + r.qtd + '</span>' + aviso + '</li>';
+    return '<li><span>' + txt + '</span><span class="falta estado">Faltam ' + r.faltam + ' (você tem ' + r.tenho + ' de ' + r.qtd + ')</span>' + aviso +
+      (r.sug ? '<span class="combo-dica">' + esc(r.sug) + '</span>' : '') +
       (r.combo ? '<span class="combo-dica">' + esc(r.combo.texto) + '</span>' : '') + '</li>';
   }).join("") + '</ul>';
 }
@@ -4071,6 +4188,8 @@ function aplicarCatalogo(dados){
   });
   catalogoPorCat = por;
   catalogoEstado = "ok";
+  especCache = {};
+  try{ if(typeof renderProjetos === "function") renderProjetos(); }catch(e){}   // refaz a comparação com as especificações do catálogo
 }
 
 // Cache no aparelho (IndexedDB; se falhar, o site segue sem cache)
