@@ -4173,7 +4173,7 @@ const CATALOGO_ATRASO = 120;    // espera (ms) depois da última tecla antes de 
 
 // Busca opcional na DigiKey (só quando a peça não está no catálogo e a pessoa aperta Enter).
 // Cole aqui o endereço do seu Worker (ex.: "https://ohmia-digikey.SEUNOME.workers.dev/"). Vazio = recurso desligado.
-const DIGIKEY_PROXY = "";
+const DIGIKEY_PROXY = "https://ohmia-digikey.bernardohenrique2208.workers.dev/";
 const DIGIKEY_CATS = ["Transistores bipolares", "MOSFETs", "Diodos", "Reguladores de tensão", "Pontes retificadoras", "Circuitos integrados"];
 const dk = { buscando: false, ultima: "" };
 let catalogoPorCat = {};        // categoria -> [{ m, f, p, t, d, n }]  (n = texto normalizado, calculado uma vez)
