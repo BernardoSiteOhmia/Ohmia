@@ -389,6 +389,7 @@ button.com-denunciar{color:var(--muted)}
 .cat-item.ativo,.cat-item:hover{background:var(--tag);color:var(--tag-ink)}
 .cat-item.ativo small,.cat-item:hover small{color:var(--tag-ink)}
 .cat-aviso{padding:9px 12px;font-size:13px;color:var(--muted)}
+.cat-dk{margin-left:8px;padding:2px 10px;font-size:.85em;width:auto}
 .cat-nota{grid-column:1/-1;font-size:13px;color:var(--muted)}
 .cat-nota a{color:var(--accent)}
 /* Decodificador de capacitores */
@@ -1638,7 +1639,7 @@ function abrirDetalhes(id){
   const modelo = (i.campos && i.campos.modelo) || "";
   const ent = acharNoCatalogo(i.categoria, modelo);
   const enc = (i.campos && i.campos.encap) || (ent && ent.p) || "";
-  const ds = ent && /^https?:\/\//i.test(ent.d || "") ? ent.d : "";
+  const ds = ent && /^https?:\/\//i.test(ent.d || "") ? ent.d : (/^https?:\/\//i.test(i.ds || "") ? i.ds : "");
   const busca = "https://www.google.com/search?q=" + encodeURIComponent((modelo || titulo(i)) + " datasheet");
   $("peca-titulo").textContent = titulo(i);
   $("peca-corpo").innerHTML =
@@ -1706,6 +1707,10 @@ function enviar(e){
   if(ruim) return msg('Em "' + ruim.l + '", use só números.', true);
   
   const d={categoria:cat, campos:campos, quantidade:Math.max(0, parseInt($("quantidade").value,10)||0), obs:$("obs").value.trim()};
+  const antigo=editId ? itens.find(function(x){ return x.id===editId; }) : null;
+  let ds=$("campos").dataset.dsUrl||"";
+  if(!ds && antigo && antigo.ds && nBusca((antigo.campos&&antigo.campos.modelo)||"")===nBusca(campos.modelo||"")) ds=antigo.ds;
+  if(ds) d.ds=ds;
   const igual=itens.find(function(x){ return x.id!==editId && chave(x)===chave(d); });
   
   if(editId){
@@ -1714,6 +1719,7 @@ function enviar(e){
     msg("Componente atualizado.");
   }else if(igual){
     igual.quantidade += d.quantidade;
+    if(d.ds && !igual.ds) igual.ds = d.ds;
     msg('Este componente já estava cadastrado: somei ' + d.quantidade + ' à quantidade de "' + titulo(igual) + '".');
   }else{
     itens.push({id:novoId(), ...d});
@@ -1728,6 +1734,7 @@ function enviar(e){
 
 function iniciarEdicao(i){
   editId=i.id;
+  $("campos").dataset.dsUrl="";
   $("categoria").value=i.categoria;
   const vals=i.campos || (cfg(i).m ? {modelo: i.codigo||i.nome||""} : {});
   montarCampos(i.categoria, vals);
@@ -1743,6 +1750,7 @@ function iniciarEdicao(i){
 function resetForm(limpaMsg){
   if(limpaMsg===undefined) limpaMsg=true;
   editId=null;
+  $("campos").dataset.dsUrl="";
   montarCampos($("categoria").value);
   $("quantidade").value=1;
   $("obs").value="";
@@ -4162,6 +4170,12 @@ document.querySelectorAll(".chk-comparar").forEach(function(c){
 const CATALOGO_URL = "catalogo.json";
 const CATALOGO_MAX = 40;        // máximo de sugestões mostradas
 const CATALOGO_ATRASO = 120;    // espera (ms) depois da última tecla antes de buscar
+
+// Busca opcional na DigiKey (só quando a peça não está no catálogo e a pessoa aperta Enter).
+// Cole aqui o endereço do seu Worker (ex.: "https://ohmia-digikey.SEUNOME.workers.dev/"). Vazio = recurso desligado.
+const DIGIKEY_PROXY = "";
+const DIGIKEY_CATS = ["Transistores bipolares", "MOSFETs", "Diodos", "Reguladores de tensão", "Pontes retificadoras", "Circuitos integrados"];
+const dk = { buscando: false, ultima: "" };
 let catalogoPorCat = {};        // categoria -> [{ m, f, p, t, d, n }]  (n = texto normalizado, calculado uma vez)
 let catalogoEstado = "carregando"; // "carregando" | "ok" | "erro"
 let catalogoAvisoDado = false;
@@ -4300,6 +4314,7 @@ function sugElemento(){
     d.setAttribute("role", "listbox");
     d.addEventListener("mousedown", function(e){ e.preventDefault(); }); // não tira o foco do campo
     d.addEventListener("click", function(e){
+      if(e.target.closest(".cat-dk")){ dkBuscar(sug.input); return; }
       const it = e.target.closest(".cat-item");
       if(it) sugEscolher(parseInt(it.dataset.i, 10));
     });
@@ -4359,13 +4374,74 @@ function sugBuscar(){
     return;
   }
   const res = buscarCatalogo(sug.cat, inp.value);
-  if(!res.length) return sugFechar();
+  if(!res.length){
+    if(dkPodeBuscar(inp)){
+      sug.itens = []; sug.ativo = -1;
+      el.innerHTML = '<div class="cat-aviso">Não achei no catálogo. Aperte <b>Enter</b> para buscar na DigiKey <button type="button" class="cat-dk">Buscar</button></div>';
+      return sugAbrir();
+    }
+    return sugFechar();
+  }
   sug.itens = res; sug.ativo = -1;
   el.innerHTML = res.map(function(it, i){
     const esp = (CAT[sug.cat] ? CAT[sug.cat].c : []).map(function(f){ return it.e && it.e[f.k]; });
     const det = [it.f, it.p, it.t].concat(esp).filter(Boolean).join(" · ");
     return '<div class="cat-item" role="option" id="cat-op-' + i + '" data-i="' + i + '" aria-selected="false"><b>' + esc(it.m) + '</b>' + (det ? '<small>' + esc(det) + '</small>' : '') + '</div>';
   }).join("");
+  el.scrollTop = 0;
+  sugAbrir();
+}
+
+// ===== Busca na DigiKey (só ao apertar Enter, quando o catálogo não achou a peça) =====
+function dkPodeBuscar(inp){
+  if(!DIGIKEY_PROXY || catalogoEstado !== "ok" || dk.buscando) return false;
+  const cont = contDoCampo(inp);
+  if(!cont) return false;
+  const cat = catDoCont(cont);
+  if(DIGIKEY_CATS.indexOf(cat) < 0) return false;
+  const termo = inp.value.trim();
+  if(nBusca(termo).length < 3) return false;
+  if(buscarCatalogo(cat, termo).length) return false;          // o catálogo achou: segue o fluxo normal
+  return dk.ultima !== cat + "|" + nBusca(termo);               // já buscou esse termo: o Enter volta a funcionar como antes
+}
+
+function dkMensagem(texto){
+  const el = sugElemento();
+  sug.itens = []; sug.ativo = -1;
+  el.innerHTML = '<div class="cat-aviso">' + esc(texto) + '</div>';
+  sugAbrir();
+}
+
+async function dkBuscar(inp){
+  if(!inp || dk.buscando || !document.body.contains(inp) || !dkPodeBuscar(inp)) return;
+  const cont = contDoCampo(inp), cat = catDoCont(cont), termo = inp.value.trim();
+  sug.input = inp; sug.cont = cont; sug.cat = cat;
+  dk.buscando = true;
+  dk.ultima = cat + "|" + nBusca(termo);
+  dkMensagem("Buscando na DigiKey…");
+  const ctrl = new AbortController();
+  const limite = setTimeout(function(){ ctrl.abort(); }, 12000);
+  let res = null, erro = "";
+  try{
+    const sep = DIGIKEY_PROXY.indexOf("?") > -1 ? "&" : "?";
+    const r = await fetch(DIGIKEY_PROXY + sep + "q=" + encodeURIComponent(termo) + "&cat=" + encodeURIComponent(cat), { signal: ctrl.signal });
+    const j = await r.json().catch(function(){ return {}; });
+    if(j && Array.isArray(j.resultados)) res = j.resultados; else erro = (j && j.erro) || "falha";
+  }catch(e){ erro = "falha"; }
+  clearTimeout(limite);
+  dk.buscando = false;
+  if(!document.body.contains(inp) || nBusca(inp.value) !== nBusca(termo)) return sugFechar();   // a pessoa mudou o texto
+  if(erro === "limite") return dkMensagem("A busca na DigiKey chegou ao limite de hoje. Tente amanhã ou preencha os dados à mão.");
+  if(erro) return dkMensagem("Não consegui buscar na DigiKey agora. Preencha os dados à mão.");
+  if(!res || !res.length) return dkMensagem("A DigiKey também não encontrou essa peça. Preencha os dados à mão.");
+  sug.itens = res.map(function(r){ return Object.assign({}, r, { fonte: "DigiKey" }); });
+  sug.ativo = -1;
+  const el = sugElemento();
+  el.innerHTML = sug.itens.map(function(it, i){
+    const esp = (CAT[cat] ? CAT[cat].c : []).map(function(f){ return it.e && it.e[f.k]; });
+    const det = [it.f, it.p, it.t].concat(esp, [it.status]).filter(Boolean).join(" · ");
+    return '<div class="cat-item" role="option" id="cat-op-' + i + '" data-i="' + i + '" aria-selected="false"><b>' + esc(it.m) + '</b>' + (det ? '<small>' + esc(det) + '</small>' : '') + '</div>';
+  }).join("") + '<div class="cat-aviso">Dados da DigiKey. Confira no datasheet antes de usar.</div>';
   el.scrollTop = 0;
   sugAbrir();
 }
@@ -4438,13 +4514,24 @@ function sugEscolher(i){
   cont.dataset.autoSpecs = JSON.stringify(preenchidos);
   const velha = cont.querySelector(".cat-nota");
   if(velha) velha.remove();
-  if(/^https?:\/\//i.test(it.d)){
+  const temDs = /^https?:\/\//i.test(it.d || "");
+  cont.dataset.dsUrl = (it.fonte && temDs) ? it.d : "";      // datasheet vindo da DigiKey é guardado no item ao salvar
+  if(temDs || it.fonte){
     const nota = document.createElement("div");
     nota.className = "cat-nota";
-    nota.appendChild(document.createTextNode("Datasheet: "));
-    const a = document.createElement("a");
-    a.href = it.d; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "abrir";
-    nota.appendChild(a);
+    if(it.fonte) nota.appendChild(document.createTextNode("Dados da " + it.fonte + ". "));
+    if(temDs){
+      nota.appendChild(document.createTextNode("Datasheet: "));
+      const a = document.createElement("a");
+      a.href = it.d; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "abrir";
+      nota.appendChild(a);
+    }
+    if(it.fonte && /^https:\/\//i.test(it.u || "")){
+      nota.appendChild(document.createTextNode(" · "));
+      const b = document.createElement("a");
+      b.href = it.u; b.target = "_blank"; b.rel = "noopener noreferrer"; b.textContent = "ver na DigiKey";
+      nota.appendChild(b);
+    }
     cont.appendChild(nota);
   }
   sugFechar();
@@ -4464,12 +4551,21 @@ document.addEventListener("input", function(e){
     const cont = contDoCampo(inp);
     const nota = cont.querySelector(".cat-nota");
     if(nota) nota.remove();
+    cont.dataset.dsUrl = "";
     sug.input = inp; sug.cont = cont; sug.cat = catDoCont(cont);
     clearTimeout(sug.timer);
     sug.timer = setTimeout(sugBuscar, CATALOGO_ATRASO);
     return;
   }
   if(t.classList && t.classList.contains("cod-cap-in")) decodificarCapacitor(t);
+});
+document.addEventListener("keydown", function(e){
+  if(e.key !== "Enter") return;
+  const inp = campoModelo(e.target);
+  if(!inp || !dkPodeBuscar(inp)) return;
+  if(sug.el && !sug.el.hidden && sug.ativo >= 0) return;
+  e.preventDefault();                 // não adiciona o item ainda: primeiro a busca
+  dkBuscar(inp);
 });
 document.addEventListener("keydown", function(e){
   if(!sug.el || sug.el.hidden || e.target !== sug.input) return;
