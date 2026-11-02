@@ -911,6 +911,7 @@ button.com-denunciar{color:var(--muted)}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, deleteUser, sendEmailVerification, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, writeBatch, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-analytics.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAD6e1dRDaBqbaw0ZbsnGXmkZE48pM0h6U",
@@ -918,10 +919,13 @@ const firebaseConfig = {
   projectId: "electrolab-d5b70",
   storageBucket: "electrolab-d5b70.firebasestorage.app",
   messagingSenderId: "184415508249",
-  appId: "1:184415508249:web:c92442d5aaf51c8800d788"
+  appId: "1:184415508249:web:c92442d5aaf51c8800d788",
+  measurementId: "G-V31PJ9SK5V"
 };
 
 const app = initializeApp(firebaseConfig);
+// Google Analytics (contagem de visitas) — só liga se o navegador suportar
+isSupported().then(ok => { if (ok) getAnalytics(app); }).catch(() => {});
 const auth = getAuth(app);
 auth.languageCode = "pt-BR"; // e-mails do Firebase (confirmação etc.) em português
 const db = getFirestore(app);
