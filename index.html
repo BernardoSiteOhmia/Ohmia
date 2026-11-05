@@ -358,7 +358,13 @@ button.com-excluir{background:transparent;border:none;color:var(--warn);padding:
 .aviso-acoes{display:inline-flex;gap:8px;margin-left:8px;flex-wrap:wrap}
 .modal{position:fixed;inset:0;background:rgba(10,15,22,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
 .modal-caixa{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:22px;width:100%;max-width:460px;max-height:90vh;overflow:auto}
+#circuito-fundo{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 .modal-caixa h3{margin:0 0 6px}
+.rodape{padding:22px 16px 34px;text-align:center;color:var(--muted);font-size:13px}
+#modal-privacidade .modal-caixa{max-width:640px}
+#modal-privacidade h4{margin:18px 0 6px;font-size:15px}
+#modal-privacidade p,#modal-privacidade li{font-size:14px;line-height:1.55}
+#modal-privacidade ul{margin:6px 0 6px 18px;padding:0}
 .den-ok{text-align:center;padding:8px 0 0}
 .den-ok-ico{width:52px;height:52px;margin:0 auto 12px;border-radius:50%;background:var(--accent);color:#fff;font-size:30px;line-height:52px;font-weight:700}
 .den-ok .actions{justify-content:center}
@@ -401,6 +407,7 @@ button.com-denunciar{color:var(--muted)}
 </style>
 </head>
 <body>
+<canvas id="circuito-fundo" aria-hidden="true"></canvas>
 <main>
   <header>
     <div class="topo-barra">
@@ -658,6 +665,7 @@ button.com-denunciar{color:var(--muted)}
             <button type="button" class="btn-icon btn-toggle-senha" data-target="reg-conf-senha" title="Mostrar/ocultar senha"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
         </label>
+        <p class="muted" style="font-size:13px;margin:0 0 12px">Ao criar a conta, você confirma que leu a <button type="button" class="text-btn" data-abrir-privacidade>Política de Privacidade</button>.</p>
         <button type="submit" class="primary">Finalizar Cadastro</button>
         <p id="msg-reg" class="msg"></p>
         <p class="auth-link">Já possui uma conta? <button type="button" class="text-btn" id="btn-voltar-login">Faça login</button></p>
@@ -806,13 +814,13 @@ button.com-denunciar{color:var(--muted)}
           </div>
         </div>
         <label>Nome do projeto
-          <input id="np-nome" required placeholder="ex.: Pisca-pisca com NE555">
+          <input id="np-nome" required maxlength="150" placeholder="ex.: Pisca-pisca com NE555">
         </label>
         <label>Descrição
-          <textarea id="np-descricao" rows="3" placeholder="Explique o que o circuito faz"></textarea>
+          <textarea id="np-descricao" rows="3" maxlength="3000" placeholder="Explique o que o circuito faz"></textarea>
         </label>
         <label>Como funciona (opcional)
-          <textarea id="np-detalhes" rows="3" placeholder="Explique como o circuito funciona"></textarea>
+          <textarea id="np-detalhes" rows="3" maxlength="20000" placeholder="Explique como o circuito funciona"></textarea>
         </label>
         <div class="np-secao">
           <strong>Peças necessárias</strong>
@@ -837,6 +845,50 @@ button.com-denunciar{color:var(--muted)}
   </div>
 
 </main>
+
+<footer class="rodape">Ohmia · <button type="button" class="text-btn" data-abrir-privacidade>Política de Privacidade</button></footer>
+
+<div id="modal-privacidade" class="modal" hidden>
+  <div class="modal-caixa" role="dialog" aria-modal="true" aria-labelledby="priv-titulo">
+    <h3 id="priv-titulo">Política de Privacidade</h3>
+    <p class="muted">Última atualização: 02/11/2026</p>
+
+    <h4>1. Quem somos</h4>
+    <p>O Ohmia é um projeto independente de inventário e projetos de eletrônica. Para qualquer pedido sobre seus dados, abra uma solicitação em <a href="https://github.com/BernardoSiteOhmia/Ohmia/issues" target="_blank" rel="noopener">github.com/BernardoSiteOhmia/Ohmia/issues</a> (essa página é pública: não coloque dados pessoais nela, que explicamos como continuar em particular).</p>
+
+    <h4>2. Quais dados coletamos</h4>
+    <ul>
+      <li><strong>Conta:</strong> e-mail, username e, se você adicionar, foto e descrição do perfil. A senha é protegida pelo Firebase Authentication (do Google) e não temos acesso a ela.</li>
+      <li><strong>O que você publica:</strong> projetos, fotos, comentários, curtidas, projetos salvos e quem você segue. Esses dados podem ser vistos por outras pessoas no site.</li>
+      <li><strong>Seu inventário de peças:</strong> fica ligado à sua conta e não é exibido a outras pessoas.</li>
+      <li><strong>Presença:</strong> guardamos o horário do seu último acesso para indicar quem está online.</li>
+      <li><strong>Medição de uso (Google Analytics):</strong> dados estatísticos como páginas visitadas, tipo de aparelho e navegador, país ou cidade aproximados e de onde veio o acesso. O Google Analytics usa identificadores no seu navegador (como cookies). Esses dados não mostram seu nome nem seu e-mail.</li>
+    </ul>
+
+    <h4>3. Funções de IA</h4>
+    <p>Quando você usa as funções de IA, o texto e as fotos que você envia são mandados ao Google (Gemini) para análise. Não envie dados pessoais nem imagens de pessoas.</p>
+
+    <h4>4. Para que usamos</h4>
+    <p>Para fazer o site funcionar, manter a segurança e a moderação e entender como o site é usado para melhorá-lo. Não vendemos seus dados e não mostramos anúncios.</p>
+
+    <h4>5. Onde os dados ficam</h4>
+    <p>Em serviços do Google (Firebase), que podem usar servidores fora do Brasil.</p>
+
+    <h4>6. Moderação</h4>
+    <p>Denúncias podem ser vistas por moderadores. Conteúdos e contas que desrespeitem as regras do site podem ser removidos ou banidos.</p>
+
+    <h4>7. Seus direitos</h4>
+    <p>Pela LGPD, você pode pedir para confirmar se tratamos seus dados, acessá-los, corrigi-los ou excluí-los. Você pode editar seu perfil e apagar seus projetos e comentários no próprio site. Para excluir a conta e os dados ligados a ela, use o contato acima.</p>
+
+    <h4>8. Menores de idade</h4>
+    <p>Se você tem menos de 18 anos, use o site com o conhecimento de um responsável.</p>
+
+    <h4>9. Mudanças</h4>
+    <p>Esta política pode mudar. A data no topo mostra a última atualização.</p>
+
+    <div class="actions"><button type="button" id="priv-fechar">Fechar</button></div>
+  </div>
+</div>
 
 <div id="modal-pessoas" class="modal" hidden>
   <div class="modal-caixa" role="dialog" aria-modal="true" aria-labelledby="pessoas-titulo">
@@ -910,7 +962,7 @@ button.com-denunciar{color:var(--muted)}
 // --- CONFIGURAÇÃO DO FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, deleteUser, sendEmailVerification, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, writeBatch, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, writeBatch, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, documentId, getDocs, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-analytics.js";
 
 const firebaseConfig = {
@@ -1305,8 +1357,10 @@ function atualizarMenu(){
   atualizarAvisoEmail();
 }
 
+let unsubscribePerfis = null;
 function ouvirPerfis(){
-  onSnapshot(collection(db, "perfis"), function(snap){
+  if(unsubscribePerfis){ unsubscribePerfis(); unsubscribePerfis = null; }
+  unsubscribePerfis = onSnapshot(collection(db, "perfis"), function(snap){
     const m = {};
     snap.docs.forEach(function(d){ m[d.id] = d.data(); });
     perfisPorUid = m;
@@ -2299,6 +2353,14 @@ function pecasHtml(p, av){
   }).join("") + '</ul>';
 }
 
+// ===== Modo leve para visitantes (economiza leituras do Firestore) =====
+const MODO_ECONOMICO = true;          // false = volta a carregar tudo para todo mundo, como antes
+const LIMITE_INICIAL_PROJETOS = 20;   // quantos projetos o visitante recebe de início (máximo 30)
+let dadosCompletos = false;           // true quando as coleções inteiras já estão sendo lidas
+let dadosIniciados = false;
+let unsubCurtidasLeve = null, unsubComentariosLeve = null;
+let idsLeveAtual = "";
+const perfisBuscados = new Set();
 let projetosNuvem = [];
 let projetoAbertoId = null;
 let editandoProjetoId = null;
@@ -2563,6 +2625,13 @@ function renderProjetos(){
   const montar = comparando ? $("filtro-montar").value : "";
   const ordem = comparando ? $("ordem-projetos").value : "";
 
+  // Visitante que busca ou filtra precisa de todos os projetos: carrega o resto agora
+  if(MODO_ECONOMICO && !dadosCompletos && dadosIniciados && (termo || cat || soVerif || feed || montar)){
+    modoCompleto();
+    $("lista-projetos").innerHTML = '<p class="vazio" style="grid-column: 1/-1;">Buscando em todos os projetos...</p>';
+    return;
+  }
+
   let filtrados = todosProjetos().filter(function(p){
     const texto = [p.titulo, p.descricao].join(" ").toLowerCase();
     const passouCat = !cat || p.tipo === cat;
@@ -2588,9 +2657,21 @@ function renderProjetos(){
     return;
   }
 
-  $("lista-projetos").innerHTML = filtrados.map(function(p){ return cardProjetoHtml(p); }).join("");
+  let htmlLista = filtrados.map(function(p){ return cardProjetoHtml(p); }).join("");
+  if(MODO_ECONOMICO && !dadosCompletos && projetosNuvem.length >= LIMITE_INICIAL_PROJETOS){
+    htmlLista += '<div style="grid-column: 1/-1;text-align:center;padding:10px 0"><button type="button" id="btn-ver-mais">Ver mais projetos</button></div>';
+  }
+  $("lista-projetos").innerHTML = htmlLista;
   avaliacaoAtual = null;
 }
+
+document.addEventListener("click", function(e){
+  const b = e.target.closest ? e.target.closest("#btn-ver-mais") : null;
+  if(!b) return;
+  b.disabled = true;
+  b.textContent = "Carregando...";
+  modoCompleto();
+});
 
 // ===== "Montei este projeto": desconta do inventário as peças usadas (com desfazer) =====
 let ultimoDesconto = null;   // { projetoId, itens: [{ id, n }] } — fica só na memória: some ao recarregar a página
@@ -2846,6 +2927,7 @@ function renderPerfil(){
 
 function abrirPerfil(uid){
   if(!uid) return;
+  modoCompleto();   // perfil precisa de todos os projetos, seguidores etc.
   perfilAbertoUid = uid;
   editandoPerfil = false;
   $("msg-perfil").textContent = "";
@@ -3306,9 +3388,81 @@ function comprimirImagem(arquivo, limite){
   });
 }
 
-function ouvirProjetos(){
-  const q = query(collection(db, "projetos"), orderBy("criadoEm", "desc"));
-  unsubscribeProjetos = onSnapshot(q, function(snap){
+// ----- Modo leve: o visitante (sem login) só recebe os projetos mais recentes -----
+function pararEscutasLeves(){
+  if(unsubCurtidasLeve){ unsubCurtidasLeve(); unsubCurtidasLeve = null; }
+  if(unsubComentariosLeve){ unsubComentariosLeve(); unsubComentariosLeve = null; }
+  idsLeveAtual = "";
+}
+
+function religarEscutasLeves(){
+  const ids = projetosNuvem.map(function(p){ return p.id; }).slice(0, 30);   // o Firestore aceita até 30 valores no "in"
+  const chave = ids.join(",");
+  if(chave === idsLeveAtual){ carregarPerfisLeves(); return; }
+  pararEscutasLeves();
+  idsLeveAtual = chave;
+  if(!ids.length){
+    carregouPublico.curt = true; carregouPublico.com = true;
+    carregarPerfisLeves();
+    return;
+  }
+  unsubCurtidasLeve = onSnapshot(query(collection(db, "curtidas"), where("projetoId", "in", ids)), aplicarCurtidas, function(err){
+    console.error("Erro ao ler curtidas: ", err);
+  });
+  unsubComentariosLeve = onSnapshot(query(collection(db, "comentarios"), where("projetoId", "in", ids)), function(snap){
+    aplicarComentarios(snap);
+    carregarPerfisLeves();
+  }, function(err){
+    console.error("Erro ao ler comentários: ", err);
+  });
+  carregarPerfisLeves();
+}
+
+// Busca só os perfis de quem aparece na tela (autores e quem comentou)
+async function carregarPerfisLeves(){
+  if(dadosCompletos) return;
+  const uids = new Set();
+  projetosNuvem.forEach(function(p){ if(p.uid) uids.add(p.uid); });
+  comentarios.forEach(function(c){ if(c.uid) uids.add(c.uid); });
+  const faltam = Array.from(uids).filter(function(u){ return !perfisBuscados.has(u); });
+  if(!faltam.length){ perfisCarregados = true; return; }
+  faltam.forEach(function(u){ perfisBuscados.add(u); });
+  try{
+    for(let i = 0; i < faltam.length; i += 30){
+      const snap = await getDocs(query(collection(db, "perfis"), where(documentId(), "in", faltam.slice(i, i + 30))));
+      if(dadosCompletos) return;
+      const novos = Object.assign({}, perfisPorUid);
+      snap.docs.forEach(function(d){ novos[d.id] = d.data(); });
+      perfisPorUid = novos;
+    }
+    perfisCarregados = true;
+    atualizarTelas();
+  }catch(err){
+    console.error("Erro ao ler perfis: ", err);
+    faltam.forEach(function(u){ perfisBuscados.delete(u); });
+  }
+}
+
+// Passa para a leitura completa (login, busca, filtros, perfis, "ver mais")
+function modoCompleto(){
+  if(dadosCompletos) return;
+  dadosCompletos = true;
+  pararEscutasLeves();
+  ouvirProjetos();
+  ouvirCurtidas();
+  ouvirPerfis();
+  ouvirComentarios();
+  ouvirSeguindo();
+}
+
+function iniciarDados(){
+  if(dadosIniciados) return;
+  dadosIniciados = true;
+  if(!MODO_ECONOMICO || auth.currentUser) modoCompleto();
+  else ouvirProjetos(LIMITE_INICIAL_PROJETOS);
+}
+
+function aplicarProjetos(snap){
     carregouPublico.proj = true;
     projetosNuvem = snap.docs.map(function(d){
       const data = d.data();
@@ -3332,15 +3486,21 @@ function ouvirProjetos(){
       };
     });
     atualizarTelas();
-  }, function(err){
+  if(!dadosCompletos) religarEscutasLeves();   // visitante: curtidas e comentários só dos projetos carregados
+}
+function ouvirProjetos(limite){
+  if(unsubscribeProjetos){ unsubscribeProjetos(); unsubscribeProjetos = null; }
+  const q = limite
+    ? query(collection(db, "projetos"), orderBy("criadoEm", "desc"), limit(limite))
+    : query(collection(db, "projetos"), orderBy("criadoEm", "desc"));
+  unsubscribeProjetos = onSnapshot(q, aplicarProjetos, function(err){
     console.error("Erro ao ler projetos: ", err);
     $("lista-projetos").insertAdjacentHTML("afterbegin", '<p class="msg erro">Não consegui carregar os projetos da comunidade.</p>');
   });
 }
 
 // Lê todas as curtidas em tempo real e atualiza contagens e botões
-function ouvirCurtidas(){
-  unsubscribeCurtidas = onSnapshot(collection(db, "curtidas"), function(snap){
+function aplicarCurtidas(snap){
     const cont = {};
     const ids = new Set();
     const eventos = [];
@@ -3355,7 +3515,10 @@ function ouvirCurtidas(){
     curtidasEventos = eventos;
     carregouPublico.curt = true;
     atualizarTelas();
-  }, function(err){
+}
+function ouvirCurtidas(){
+  if(unsubscribeCurtidas){ unsubscribeCurtidas(); unsubscribeCurtidas = null; }
+  unsubscribeCurtidas = onSnapshot(collection(db, "curtidas"), aplicarCurtidas, function(err){
     console.error("Erro ao ler curtidas: ", err);
   });
 }
@@ -3382,8 +3545,7 @@ async function alternarCurtida(projetoId){
 }
 
 // Lê todos os comentários em tempo real (ordenados do mais antigo ao mais novo)
-function ouvirComentarios(){
-  unsubscribeComentarios = onSnapshot(collection(db, "comentarios"), function(snap){
+function aplicarComentarios(snap){
     const lista = snap.docs.map(function(d){ return Object.assign({ id: d.id, t: tempoDoc(d, "criadoEm") }, d.data()); });
     lista.sort(function(a, b){
       const ta = a.criadoEm && a.criadoEm.toMillis ? a.criadoEm.toMillis() : Date.now();
@@ -3396,7 +3558,10 @@ function ouvirComentarios(){
     carregouPublico.com = true;
     comentariosContagem = cont;
     atualizarTelas();
-  }, function(err){
+}
+function ouvirComentarios(){
+  if(unsubscribeComentarios){ unsubscribeComentarios(); unsubscribeComentarios = null; }
+  unsubscribeComentarios = onSnapshot(collection(db, "comentarios"), aplicarComentarios, function(err){
     console.error("Erro ao ler comentários: ", err);
   });
 }
@@ -3417,6 +3582,7 @@ function ouvirSalvos(){
 
 // Seguir: lê todas as relações para mostrar contagens nos perfis
 function ouvirSeguindo(){
+  if(unsubscribeSeguindo){ unsubscribeSeguindo(); unsubscribeSeguindo = null; }
   unsubscribeSeguindo = onSnapshot(collection(db, "seguindo"), function(snap){
     const seguidores = {}, seguindo = {}, ids = new Set(), rel = [], eventos = [];
     snap.docs.forEach(function(d){
@@ -5753,15 +5919,19 @@ $("form-projeto").addEventListener("submit", async function(e){
 });
 
 // Atualiza o botão "+ Novo projeto" e o status quando o login muda
-onAuthStateChanged(auth, function(){ sincronizarBanimento(); atualizarMenu(); ouvirSalvos(); atualizarTelas(); verificarPerfil(); });
+onAuthStateChanged(auth, function(){ iniciarDados(); if(auth.currentUser) modoCompleto(); sincronizarBanimento(); atualizarMenu(); ouvirSalvos(); atualizarTelas(); verificarPerfil(); });
 
 renderModelos();
 renderProjetos();
-ouvirProjetos();
-ouvirCurtidas();
-ouvirPerfis();
-ouvirComentarios();
-ouvirSeguindo();
+// Política de Privacidade (abre em janela; fecha com o botão, clicando fora ou com Esc)
+document.addEventListener("click", function(e){
+  const t = e.target;
+  if(t.closest && t.closest("[data-abrir-privacidade]")){ $("modal-privacidade").hidden = false; return; }
+  if(t.id === "priv-fechar" || t === $("modal-privacidade")) $("modal-privacidade").hidden = true;
+});
+document.addEventListener("keydown", function(e){ if(e.key === "Escape") $("modal-privacidade").hidden = true; });
+
+setTimeout(iniciarDados, 3000);   // garantia: se o login demorar a responder, começa no modo leve
 ouvirModeradores();
 carregarCatalogo();
 
@@ -5799,6 +5969,183 @@ try {
 } catch(err) {
   console.error("Erro na inicialização:", err);
 }
+</script>
+
+<script>
+// ===== Fundo: placa de circuito com pulsos de luz (discreto) =====
+(function(){
+  try{
+    var CIRCUITO = {
+      intensidade: 1,   // brilho: 0 = desliga | 0.6 = mais sutil | 1 = padrão | 1.6 = mais visível
+      velocidade: 1.5   // pulsos: 0.5 = bem lento | 1 = calmo | 1.5 = médio | 2.5 = rápido
+    };
+    if(!CIRCUITO.intensidade) return;
+    var cv = document.getElementById("circuito-fundo");
+    if(!cv || !cv.getContext) return;
+    var ctx = cv.getContext("2d");
+    var reduzir = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+    var DIRS = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+    var W = 0, H = 0, DPR = 1, camada = null, trilhas = [], pulsos = [];
+    var cor = { r: 108, g: 192, b: 217 }, escuro = true;
+    var rodando = false, ultimo = 0, timerResize = null, larguraAnt = 0, alturaAnt = 0;
+    var CAUDA = 190;                       // comprimento do rastro iluminado (px)
+    var inten = Math.max(0, CIRCUITO.intensidade);
+
+    function semente(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+    function hexRgb(h){
+      var m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(h).trim());
+      if(!m) return null;
+      var x = m[1]; if(x.length === 3) x = x[0]+x[0]+x[1]+x[1]+x[2]+x[2];
+      return { r: parseInt(x.slice(0,2),16), g: parseInt(x.slice(2,4),16), b: parseInt(x.slice(4,6),16) };
+    }
+    function lerCores(){
+      var cs = getComputedStyle(document.documentElement);
+      var a = hexRgb(cs.getPropertyValue("--accent")), b = hexRgb(cs.getPropertyValue("--bg"));
+      if(a) cor = a;
+      if(b) escuro = (0.299*b.r + 0.587*b.g + 0.114*b.b) < 128;
+    }
+    function rgba(a){ return "rgba(" + cor.r + "," + cor.g + "," + cor.b + "," + Math.max(0, Math.min(1, a)).toFixed(3) + ")"; }
+
+    function montar(pts){
+      var acc = [0];
+      for(var i = 1; i < pts.length; i++){
+        var dx = pts[i][0]-pts[i-1][0], dy = pts[i][1]-pts[i-1][1];
+        acc.push(acc[i-1] + Math.sqrt(dx*dx + dy*dy));
+      }
+      return { pts: pts, acc: acc, total: acc[acc.length-1] };
+    }
+    function gerar(){
+      var rnd = semente(20261104);
+      var cel = W < 700 ? 34 : 44;
+      var qtd = Math.max(8, Math.min(48, Math.round(W * H / 55000)));
+      var tent = 0;
+      trilhas = [];
+      while(trilhas.length < qtd && tent < qtd * 8){
+        tent++;
+        var pts = [[Math.floor(rnd() * W / cel) * cel, Math.floor(rnd() * H / cel) * cel]];
+        var d = Math.floor(rnd() * 8), segs = 4 + Math.floor(rnd() * 6);
+        for(var s = 0; s < segs; s++){
+          var len = 2 + Math.floor(rnd() * 6), v = DIRS[d], u = pts[pts.length-1];
+          var nx = u[0] + v[0]*len*cel, ny = u[1] + v[1]*len*cel;
+          if(nx < -cel || ny < -cel || nx > W + cel || ny > H + cel) break;
+          pts.push([nx, ny]);
+          var r = rnd();
+          d = (d + (r < .45 ? 1 : r < .9 ? 7 : r < .95 ? 2 : 6)) % 8;   // curvas de 45° (às vezes 90°)
+        }
+        if(pts.length >= 3) trilhas.push(montar(pts));
+      }
+    }
+    function pontoEm(t, dist){
+      var a = t.acc, p = t.pts;
+      if(dist <= 0) return p[0];
+      if(dist >= t.total) return p[p.length-1];
+      for(var i = 1; i < a.length; i++){
+        if(dist <= a[i]){
+          var f = (dist - a[i-1]) / (a[i] - a[i-1]);
+          return [p[i-1][0] + (p[i][0]-p[i-1][0])*f, p[i-1][1] + (p[i][1]-p[i-1][1])*f];
+        }
+      }
+      return p[p.length-1];
+    }
+
+    // Camada fixa: as trilhas apagadas e os pontos de solda (desenhada uma vez)
+    function desenharFixa(){
+      camada = document.createElement("canvas");
+      camada.width = cv.width; camada.height = cv.height;
+      var c = camada.getContext("2d");
+      c.setTransform(DPR, 0, 0, DPR, 0, 0);
+      var base = (escuro ? .13 : .10) * inten;
+      c.lineWidth = 1; c.lineJoin = "round"; c.lineCap = "round";
+      trilhas.forEach(function(t){
+        c.strokeStyle = rgba(base);
+        c.beginPath();
+        t.pts.forEach(function(q, i){ if(i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); });
+        c.stroke();
+        [t.pts[0], t.pts[t.pts.length-1]].forEach(function(q){
+          c.strokeStyle = rgba(base * 1.9);
+          c.beginPath(); c.arc(q[0], q[1], 3.2, 0, 6.2832); c.stroke();
+        });
+      });
+    }
+
+    function novoPulso(){
+      return { t: trilhas[Math.floor(Math.random() * trilhas.length)], d: -Math.random() * 400, v: (70 + Math.random() * 60) * Math.max(.2, CIRCUITO.velocidade || 1) };
+    }
+    function iniciarPulsos(){
+      var n = Math.max(4, Math.min(W < 700 ? 5 : 12, Math.round(trilhas.length / 3)));
+      pulsos = [];
+      for(var i = 0; i < n; i++) pulsos.push(novoPulso());
+    }
+
+    function desenharPulso(p){
+      if(p.d <= 0) return;
+      var cabeca = Math.min(p.d, p.t.total);
+      var ant = pontoEm(p.t, cabeca);
+      var pico = Math.min(.9, .55 * inten);
+      ctx.lineWidth = 1.6; ctx.lineCap = "round";
+      for(var s = cabeca - 7; ; s -= 7){
+        var sc = Math.max(s, p.d - CAUDA, 0);
+        var pt = pontoEm(p.t, sc);
+        var f = (p.d - sc) / CAUDA;
+        if(f >= 1) break;
+        ctx.strokeStyle = rgba(pico * (1 - f) * (1 - f));
+        ctx.beginPath(); ctx.moveTo(ant[0], ant[1]); ctx.lineTo(pt[0], pt[1]); ctx.stroke();
+        ant = pt;
+        if(sc <= 0 || sc <= p.d - CAUDA) break;
+      }
+    }
+
+    function desenhar(dt){
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      if(camada) ctx.drawImage(camada, 0, 0, W, H);
+      if(!dt) return;
+      for(var i = 0; i < pulsos.length; i++){
+        var p = pulsos[i];
+        p.d += p.v * dt;
+        if(p.d - CAUDA > p.t.total){ pulsos[i] = novoPulso(); continue; }
+        desenharPulso(p);
+      }
+    }
+    function quadro(t){
+      if(!rodando) return;
+      requestAnimationFrame(quadro);
+      if(t - ultimo < 33) return;                       // no máximo ~30 quadros por segundo
+      var dt = Math.min(.1, (t - ultimo) / 1000);
+      ultimo = t;
+      desenhar(dt);
+    }
+    function ligar(){ if(rodando || reduzir.matches || document.hidden) return; rodando = true; ultimo = performance.now(); requestAnimationFrame(quadro); }
+    function desligar(){ rodando = false; }
+
+    function preparar(){
+      W = window.innerWidth; H = window.innerHeight;
+      DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      larguraAnt = W; alturaAnt = H;
+      lerCores(); gerar(); desenharFixa(); iniciarPulsos();
+      desenhar(0);
+      if(!reduzir.matches) ligar();
+    }
+    function trocouTema(){ lerCores(); desenharFixa(); desenhar(0); }
+
+    window.addEventListener("resize", function(){
+      clearTimeout(timerResize);
+      timerResize = setTimeout(function(){
+        if(window.innerWidth !== larguraAnt || Math.abs(window.innerHeight - alturaAnt) > 200) preparar();
+      }, 250);
+    });
+    document.addEventListener("visibilitychange", function(){ if(document.hidden) desligar(); else ligar(); });
+    if(window.matchMedia){
+      var esq = matchMedia("(prefers-color-scheme: dark)");
+      if(esq.addEventListener) esq.addEventListener("change", trocouTema);
+      if(reduzir.addEventListener) reduzir.addEventListener("change", function(){ if(reduzir.matches){ desligar(); desenhar(0); } else ligar(); });
+    }
+    if(window.MutationObserver) new MutationObserver(trocouTema).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+    preparar();
+  }catch(e){ console.error("Fundo animado desativado:", e); }
+})();
 </script>
 </body>
 </html>
